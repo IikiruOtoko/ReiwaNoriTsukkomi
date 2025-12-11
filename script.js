@@ -129,11 +129,11 @@ function updateVideoSize() {
             
             // 動画の上端からの相対位置を計算
             // テキストボックスの上端: 動画の上から66%
-            // テキストボックスの下端: 動画の上から97%
+            // テキストボックスの下端: 動画の上から90%
             const overlayTopPercent = 66; // 66%
-            const overlayBottomPercent = 97; // 97%
+            const overlayBottomPercent = 90; // 90%
             
-            // テキストボックスの高さ = 動画の高さ × (97% - 66%)
+            // テキストボックスの高さ = 動画の高さ × (90% - 66%)
             const overlayHeight = mediaHeight * (overlayBottomPercent - overlayTopPercent) / 100;
             
             // コンテナ内でのテキストボックスの上端位置
@@ -150,22 +150,22 @@ function updateVideoSize() {
             
             // 内部要素の高さを調整
             // 白地の高さから、padding、gap、ボタンの高さを引いた値がテキストボックスの高さ
-            const overlayPadding = 20; // padding: 20px（上下）
-            const gap = 15; // gap: 15px（テキストボックスとボタンの間）
+            const overlayPadding = 15; // padding: 15px（上下）
+            const gap = 5; // gap: 5px（テキストボックスとボタンの間）
             
             // ボタンの高さを取得
             const submitBtn = overlay.querySelector('.submit-btn');
             const newQuestionBtn = overlay.querySelector('.new-question-btn');
             const button = submitBtn || newQuestionBtn;
             
-            let buttonHeight = 44; // デフォルト44px
+            let buttonHeight = 36; // デフォルト36px（padding: 6px 20pxの場合）
             if (button) {
                 // ボタンが非表示の場合でも高さを取得できるようにする
                 const originalVisibility = button.style.visibility;
                 const originalOpacity = button.style.opacity;
                 button.style.visibility = 'visible';
                 button.style.opacity = '1';
-                buttonHeight = button.offsetHeight || button.clientHeight || 44;
+                buttonHeight = button.offsetHeight || button.clientHeight || 36;
                 button.style.visibility = originalVisibility;
                 button.style.opacity = originalOpacity;
             }
