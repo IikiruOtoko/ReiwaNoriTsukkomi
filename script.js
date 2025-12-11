@@ -3,6 +3,14 @@ const VIDEO_ASPECT_RATIO = 16 / 9; // 一般的な動画のアスペクト比（
 const VIDEO_WIDTH = 1920;
 const VIDEO_HEIGHT = 1080;
 
+// テキスト表示の切り替え時間（秒）
+const TIME_SOUSOUSOUSOU_END = 3.9; // 「そうそうそうそう」の表示終了時間
+const TIME_KI_END = 5.5; // kiの表示終了時間
+const TIME_SHOU_END = 7.1; // shouの表示終了時間
+const TIME_KETSU_END = 8.6; // ketsuの表示終了時間
+const TIME_TTE_END = 9.3; // 「って…」の表示終了時間
+const TIME_API_CHECK = 2.4; // API結果をチェックする時間
+
 // DOM要素の取得
 const questionForm = document.getElementById('question-form');
 const questionInput = document.getElementById('question-input');
@@ -157,8 +165,8 @@ questionForm.addEventListener('submit', async (e) => {
         }, 10);
         
         // APIリクエストを開始（Promiseを保存）
-        let apiPromise = sendToAPI(question).then(answer => {
-            return { success: true, answer: answer };
+        let apiPromise = sendToAPI(question).then(answerData => {
+            return { success: true, answerData: answerData };
         }).catch(error => {
             console.error('エラーが発生しました:', error);
             return { success: false, error: '申し訳ございません。エラーが発生しました。もう一度お試しください。' };
@@ -166,17 +174,37 @@ questionForm.addEventListener('submit', async (e) => {
         
         // API結果の状態を管理
         let apiResult = null;
-        let hasReached35Seconds = false;
+        let hasReached27Seconds = false;
+        
+        // 動画の再生時間に応じてテキストを更新する関数
+        const updateAnswerTextByTime = (currentTime, answerData, question) => {
+            if (currentTime < TIME_API_CHECK) {
+                // TIME_API_CHECKまでは「はい、[QUERY]」を表示
+                answerText.textContent = `はい、${question}`;
+            } else if (currentTime < TIME_SOUSOUSOUSOU_END) {
+                answerText.textContent = 'そうそうそうそう';
+            } else if (answerData && currentTime < TIME_KI_END) {
+                answerText.textContent = answerData.ki;
+            } else if (answerData && currentTime < TIME_SHOU_END) {
+                answerText.textContent = answerData.shou;
+            } else if (answerData && currentTime < TIME_KETSU_END) {
+                answerText.textContent = answerData.ketsu;
+            } else if (currentTime < TIME_TTE_END) {
+                answerText.textContent = 'って…';
+            } else {
+                answerText.textContent = 'そ！';
+            }
+        };
         
         // API結果を取得（非同期で実行）
         apiPromise.then(result => {
             apiResult = result;
-            isWaitingForApi = false;
             
-            // 2.7秒を過ぎていれば、すぐに結果を表示して動画を再開
-            if (hasReached35Seconds) {
+            // APIチェック時間を過ぎていれば、すぐに動画を再開
+            if (hasReached27Seconds) {
                 if (result.success) {
-                    displayAnswer(result.answer);
+                    // 現在の時刻に応じてテキストを更新
+                    updateAnswerTextByTime(answerVideo.currentTime, result.answerData, question);
                 } else {
                     displayError(result.error);
                 }
@@ -191,15 +219,18 @@ questionForm.addEventListener('submit', async (e) => {
         answerVideo.currentTime = 0;
         answerVideo.play();
         
-        // 動画の2.7秒時点を監視
+        // 動画の再生時間を監視してテキストを更新
         const checkTimeUpdate = () => {
-            if (answerVideo.currentTime >= 2.7 && !hasReached35Seconds) {
-                hasReached35Seconds = true;
+            const currentTime = answerVideo.currentTime;
+            
+            // APIチェック時間時点でAPI結果をチェック
+            if (currentTime >= TIME_API_CHECK && !hasReached27Seconds) {
+                hasReached27Seconds = true;
                 
                 if (apiResult) {
-                    // API結果が既に返ってきている場合、結果を表示
+                    // API結果が既に返ってきている場合
                     if (apiResult.success) {
-                        displayAnswer(apiResult.answer);
+                        updateAnswerTextByTime(currentTime, apiResult.answerData, question);
                     } else {
                         displayError(apiResult.error);
                     }
@@ -208,6 +239,14 @@ questionForm.addEventListener('submit', async (e) => {
                     // API結果がまだ返ってきていない場合、動画を停止して待機
                     answerVideo.pause();
                 }
+            }
+            
+            // 時間に応じてテキストを更新（API結果がなくても「はい、[QUERY]」や「そうそうそうそう」は表示可能）
+            if (apiResult && apiResult.success) {
+                updateAnswerTextByTime(currentTime, apiResult.answerData, question);
+            } else {
+                // API結果がまだない場合でも、TIME_API_CHECKまでは「はい、[QUERY]」を表示
+                updateAnswerTextByTime(currentTime, null, question);
             }
         };
         
@@ -266,14 +305,20 @@ async function sendToAPI(question) {
     
     const data = await response.json();
     
-    if (data.answer) {
-        return data.answer;
+    // JSON形式のレスポンスをパース
+    if (data.ki && data.shou && data.ketsu) {
+        // JSONオブジェクトとして返す
+        return {
+            ki: data.ki,
+            shou: data.shou,
+            ketsu: data.ketsu
+        };
     } else {
         throw new Error('Invalid response format from API');
     }
 }
 
-// 回答を表示
+// 回答を表示（この関数は現在使用されていませんが、互換性のため残しています）
 function displayAnswer(answer) {
     let processedAnswer = answer;
     
