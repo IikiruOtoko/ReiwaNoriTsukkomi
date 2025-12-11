@@ -29,6 +29,9 @@ const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
 // const API_URL_BASE = 'http://localhost:10000/';
 const API_URL = API_URL_BASE + 'nori_tsukkomi';
 
+// overlayの固定width（一度設定したら変更しない）
+let fixedOverlayWidth = null;
+
 // 動画サイズを動的に計算する関数
 function calculateVideoSize() {
     const containerHeight = window.innerHeight * 0.98; // 98vh
@@ -96,14 +99,22 @@ function updateVideoSize() {
         const mediaRect = currentMedia.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
         
-        // 幅の設定
+        // 幅の設定（固定widthが設定されている場合はそれを使用、そうでない場合は計算）
         let overlayWidth;
-        if (!isMobilePortrait) {
-            // デスクトップの場合は実際のメディアの幅を取得して50%に設定（最大500px）
-            overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
+        if (fixedOverlayWidth !== null) {
+            // 固定widthが設定されている場合はそれを使用
+            overlayWidth = fixedOverlayWidth;
         } else {
-            // スマホの場合はメディアの幅の98%に設定
-            overlayWidth = actualMediaWidth * 0.98;
+            // 固定widthが設定されていない場合は計算
+            if (!isMobilePortrait) {
+                // デスクトップの場合は実際のメディアの幅を取得して50%に設定（最大500px）
+                overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
+            } else {
+                // スマホの場合はメディアの幅の98%に設定
+                overlayWidth = actualMediaWidth * 0.98;
+            }
+            // 計算したwidthを固定widthとして保存
+            fixedOverlayWidth = overlayWidth;
         }
         
         overlay.style.width = `${overlayWidth}px`;
@@ -186,6 +197,8 @@ let resizeTimeout;
 function debouncedUpdateVideoSize() {
     clearTimeout(resizeTimeout);
     resizeTimeout = setTimeout(() => {
+        // リサイズ時は固定widthをリセットして再計算
+        fixedOverlayWidth = null;
         updateVideoSize();
     }, 100); // 100ms待機してから実行
 }
@@ -197,6 +210,8 @@ window.addEventListener('resize', debouncedUpdateVideoSize);
 window.addEventListener('orientationchange', () => {
     // 向きが変わった後、レイアウトが確定するまで少し待つ
     setTimeout(() => {
+        // 向きが変わった時は固定widthをリセットして再計算
+        fixedOverlayWidth = null;
         updateVideoSize();
     }, 200);
 });
@@ -252,9 +267,14 @@ questionForm.addEventListener('submit', async (e) => {
             overlay.style.bottom = savedBottom;
             if (savedHeight && savedHeight !== 'auto') overlay.style.height = savedHeight;
             if (savedWidth && savedWidth !== 'auto') {
-                overlay.style.width = savedWidth;
-                overlay.style.maxWidth = savedWidth;
-                overlay.style.minWidth = savedWidth;
+                // widthを固定値として保存
+                const widthValue = parseFloat(savedWidth);
+                if (!isNaN(widthValue)) {
+                    fixedOverlayWidth = widthValue;
+                    overlay.style.width = savedWidth;
+                    overlay.style.maxWidth = savedWidth;
+                    overlay.style.minWidth = savedWidth;
+                }
             }
         }
         
@@ -495,6 +515,9 @@ newQuestionBtn.addEventListener('click', () => {
         answerVideo.pause();
         answerVideo.currentTime = 0;
     }
+    
+    // 固定widthをリセット（新しい質問時は再計算可能にする）
+    fixedOverlayWidth = null;
     
     // フォームをリセット
     questionForm.reset();
