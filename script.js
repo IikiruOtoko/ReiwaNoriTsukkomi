@@ -16,11 +16,10 @@ const questionForm = document.getElementById('question-form');
 const questionInput = document.getElementById('question-input');
 const questionArea = document.getElementById('question-area');
 const answerArea = document.getElementById('answer-area');
-const loadingArea = document.getElementById('loading-area');
 const answerText = document.getElementById('answer-text');
 const newQuestionBtn = document.getElementById('new-question-btn');
 const loadingVideo = document.getElementById('loading-video');
-const displayVideo = document.getElementById('display-video');
+const displayImage = document.getElementById('display-image');
 const answerVideo = document.getElementById('answer-video');
 
 // API設定
@@ -61,41 +60,41 @@ function calculateVideoSize() {
     return { width: videoWidth, height: videoHeight };
 }
 
-// 動画サイズを更新する関数
+// 動画・画像サイズを更新する関数
 function updateVideoSize() {
     const isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
-    const videos = document.querySelectorAll('.main-video');
+    const mediaElements = document.querySelectorAll('.main-video');
     
     if (isMobilePortrait) {
         // スマホの場合はCSSで制御（JavaScriptでサイズを設定しない）
-        videos.forEach(video => {
-            video.style.width = '';
-            video.style.height = '';
+        mediaElements.forEach(element => {
+            element.style.width = '';
+            element.style.height = '';
         });
     } else {
         // デスクトップの場合は動的にサイズを計算
         const { width, height } = calculateVideoSize();
-        videos.forEach(video => {
-            video.style.width = `${width}px`;
-            video.style.height = `${height}px`;
+        mediaElements.forEach(element => {
+            element.style.width = `${width}px`;
+            element.style.height = `${height}px`;
         });
     }
     
-    // 動画のサイズ設定後にテキストボックスの幅を調整（少し遅延を入れる）
+    // 動画・画像のサイズ設定後にテキストボックスの幅を調整（少し遅延を入れる）
     setTimeout(() => {
         const overlays = document.querySelectorAll('.overlay-form, .overlay-answer');
-        const firstVideo = document.querySelector('.main-video');
-        if (firstVideo) {
-            const actualVideoWidth = firstVideo.offsetWidth || firstVideo.clientWidth;
+        const firstMedia = document.querySelector('.main-video');
+        if (firstMedia) {
+            const actualMediaWidth = firstMedia.offsetWidth || firstMedia.clientWidth;
             overlays.forEach(overlay => {
                 if (!isMobilePortrait) {
-                    // デスクトップの場合は実際の動画の幅を取得して50%に設定（最大500px）
-                    const overlayWidth = Math.min(actualVideoWidth * 0.5, 500);
+                    // デスクトップの場合は実際のメディアの幅を取得して50%に設定（最大500px）
+                    const overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
                     overlay.style.width = `${overlayWidth}px`;
                     overlay.style.maxWidth = `${overlayWidth}px`;
                 } else {
-                    // スマホの場合は動画の幅の98%に設定
-                    const overlayWidth = actualVideoWidth * 0.98;
+                    // スマホの場合はメディアの幅の98%に設定
+                    const overlayWidth = actualMediaWidth * 0.98;
                     overlay.style.width = `${overlayWidth}px`;
                     overlay.style.maxWidth = `${overlayWidth}px`;
                 }
@@ -414,12 +413,6 @@ newQuestionBtn.addEventListener('click', () => {
         answerVideo.currentTime = 0;
     }
     
-    // 最初の動画を最初のフレームで固定
-    if (displayVideo) {
-        displayVideo.pause();
-        displayVideo.currentTime = 0;
-    }
-    
     // フォームをリセット
     questionForm.reset();
     questionInput.focus();
@@ -472,34 +465,30 @@ function setupVideoErrorHandling(video, videoName) {
 document.addEventListener('DOMContentLoaded', async () => {
     warmupAPI();
     
-    // すべての動画要素にエラーハンドリングを設定
-    if (displayVideo) {
-        setupVideoErrorHandling(displayVideo, 'display-video');
-        displayVideo.pause();
-        displayVideo.currentTime = 0;
-        // 動画のメタデータが読み込まれたら最初のフレームで固定
-        displayVideo.addEventListener('loadedmetadata', () => {
-            displayVideo.currentTime = 0;
-            displayVideo.pause();
+    // 画像の読み込みエラーハンドリング
+    if (displayImage) {
+        displayImage.addEventListener('error', (e) => {
+            console.error('display-imageの読み込みエラー:', e);
         });
-        // 動画の読み込みを明示的に開始
-        displayVideo.load();
+        displayImage.addEventListener('load', () => {
+            console.log('display-imageの読み込み完了');
+        });
     }
     
     if (answerVideo) {
         setupVideoErrorHandling(answerVideo, 'answer-video');
-        // 動画の読み込みを明示的に開始
+        // answer-videoは事前にメタデータを読み込む（preload="metadata"）
+        // メタデータの読み込みを明示的に開始
         answerVideo.load();
     }
     
     if (loadingVideo) {
         setupVideoErrorHandling(loadingVideo, 'loading-video');
-        // 動画の読み込みを明示的に開始
-        loadingVideo.load();
+        // loading-videoは使用されるまで読み込まない（preload="none"）
     }
     
     questionInput.focus();
-    updateVideoSize(); // 動画サイズを初期化
+    updateVideoSize(); // 動画・画像サイズを初期化
     
     // コマンド + エンターで送信
     questionInput.addEventListener('keydown', (e) => {

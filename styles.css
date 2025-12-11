@@ -50,7 +50,7 @@ body {
     height: 100vh;
 }
 
-.question-area, .answer-area, .loading-area {
+.question-area, .answer-area {
     transition: all 0.3s ease;
     width: 100%;
     display: flex;
@@ -147,10 +147,6 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
-}
-
-.loading-area {
-    text-align: center;
 }
 
 .answer-content {
