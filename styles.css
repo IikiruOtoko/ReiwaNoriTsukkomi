@@ -82,7 +82,7 @@ body {
 
 .overlay-form, .overlay-answer {
     position: absolute;
-    bottom: 30px;
+    /* bottomはJavaScriptで動的に設定（動画の下端を基準に） */
     left: 50%;
     transform: translateX(-50%);
     background: rgba(255, 255, 255, 0.95);
@@ -107,7 +107,7 @@ body {
     font-size: 16px;
     font-family: inherit;
     resize: none;
-    height: 120px;
+    /* 高さはJavaScriptで動的に設定 */
     transition: all 0.3s ease;
     background: white;
 }
@@ -122,9 +122,9 @@ body {
     background: rgb(229, 8, 196);
     color: white;
     border: none;
-    padding: 12px 25px;
-    border-radius: 25px;
-    font-size: 16px;
+    padding: 8px 20px;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -153,6 +153,10 @@ body {
     background: transparent;
     border-radius: 15px;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 100%;
 }
 
 .answer-content h3 {
@@ -163,29 +167,35 @@ body {
 }
 
 .answer-text {
+    width: 100%;
+    padding: 0px;
+    border: none;
+    border-radius: 0;
     color: #333;
     line-height: 1.6;
-    font-size: 36px;
+    font-size: 32px;
     font-weight: bold;
-    margin-bottom: 15px;
+    font-family: inherit;
     white-space: pre-wrap;
-    max-height: 200px;
-    overflow-y: auto;
     text-align: center;
     /* サイズはJavaScriptで動的に設定 */
     box-sizing: border-box;
     display: flex;
     align-items: center;
     justify-content: center;
+    background: transparent;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    /* margin-bottomは削除（ボタンとのgapは親要素で管理） */
 }
 
 .new-question-btn {
     background: rgb(229, 8, 196);
     color: white;
     border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 6px 16px;
+    border-radius: 18px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s ease;
@@ -231,7 +241,7 @@ body {
     
     .overlay-form, .overlay-answer {
         padding: 20px;
-        bottom: 120px;
+        /* bottomはJavaScriptで動的に設定（動画の下端を基準に） */
         /* 幅はJavaScriptで動的に設定 */
     }
     

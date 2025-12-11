@@ -29,7 +29,7 @@ const API_URL = API_URL_BASE + 'nori_tsukkomi';
 
 // 動画サイズを動的に計算する関数
 function calculateVideoSize() {
-    const containerHeight = window.innerHeight * 0.95; // 95vh
+    const containerHeight = window.innerHeight * 0.98; // 98vh
     const containerWidth = window.innerWidth * 0.9; // 90% of viewport width
     
     // スマホ（縦）の場合は横幅いっぱいにする
@@ -80,34 +80,165 @@ function updateVideoSize() {
         });
     }
     
-    // 動画・画像のサイズ設定後にテキストボックスの幅を調整（少し遅延を入れる）
+    // 動画・画像のサイズ設定後にテキストボックスの幅と位置を調整（少し遅延を入れる）
     setTimeout(() => {
-        const overlays = document.querySelectorAll('.overlay-form, .overlay-answer');
-        const firstMedia = document.querySelector('.main-video');
-        if (firstMedia) {
-            const actualMediaWidth = firstMedia.offsetWidth || firstMedia.clientWidth;
-            overlays.forEach(overlay => {
+        // 質問エリアの幅を取得（非表示でも取得可能）
+        const overlayForm = questionArea.querySelector('.overlay-form');
+        let questionAreaWidth = 0;
+        if (overlayForm) {
+            // 非表示の場合は一時的に表示して幅を取得
+            if (questionArea.classList.contains('hidden')) {
+                const wasHidden = true;
+                questionArea.classList.remove('hidden');
+                questionAreaWidth = overlayForm.offsetWidth || overlayForm.clientWidth;
+                questionArea.classList.add('hidden');
+            } else {
+                questionAreaWidth = overlayForm.offsetWidth || overlayForm.clientWidth;
+            }
+        }
+        
+        // 各エリアごとに処理
+        const areas = [
+            { area: questionArea, overlaySelector: '.overlay-form', mediaSelector: '.main-video' },
+            { area: answerArea, overlaySelector: '.overlay-answer', mediaSelector: '.main-video' }
+        ];
+        
+        areas.forEach(({ area, overlaySelector, mediaSelector }) => {
+            if (area.classList.contains('hidden')) {
+                // 回答エリアが非表示で、質問エリアの幅が取得できている場合はそれを使用
+                if (area === answerArea && questionAreaWidth > 0) {
+                    const overlay = area.querySelector(overlaySelector);
+                    if (overlay) {
+                        overlay.style.width = `${questionAreaWidth}px`;
+                        overlay.style.maxWidth = `${questionAreaWidth}px`;
+                        overlay.style.minWidth = `${questionAreaWidth}px`;
+                    }
+                }
+                return; // 非表示のエリアはスキップ（幅の設定は上で行った）
+            }
+            
+            const overlay = area.querySelector(overlaySelector);
+            const media = area.querySelector(mediaSelector);
+            const container = area.querySelector('.video-container');
+            
+            if (overlay && media && container) {
+                const actualMediaWidth = media.offsetWidth || media.clientWidth;
+                const mediaRect = media.getBoundingClientRect();
+                const containerRect = container.getBoundingClientRect();
+                
+                // 幅の設定
+                let overlayWidth;
                 if (!isMobilePortrait) {
                     // デスクトップの場合は実際のメディアの幅を取得して50%に設定（最大500px）
-                    const overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
-                    overlay.style.width = `${overlayWidth}px`;
-                    overlay.style.maxWidth = `${overlayWidth}px`;
+                    overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
                 } else {
                     // スマホの場合はメディアの幅の98%に設定
-                    const overlayWidth = actualMediaWidth * 0.98;
-                    overlay.style.width = `${overlayWidth}px`;
-                    overlay.style.maxWidth = `${overlayWidth}px`;
+                    overlayWidth = actualMediaWidth * 0.98;
                 }
-            });
-            
-            // 回答エリアのテキストボックスのサイズを最初のtextareaと同じにする
-            syncAnswerBoxSize();
-        }
+                
+                overlay.style.width = `${overlayWidth}px`;
+                overlay.style.maxWidth = `${overlayWidth}px`;
+                overlay.style.minWidth = `${overlayWidth}px`;
+                
+                // 回答エリアの場合は質問エリアの幅に合わせる（質問エリアが表示されている場合）
+                if (area === answerArea && questionAreaWidth > 0 && !questionArea.classList.contains('hidden')) {
+                    overlay.style.width = `${questionAreaWidth}px`;
+                    overlay.style.maxWidth = `${questionAreaWidth}px`;
+                    overlay.style.minWidth = `${questionAreaWidth}px`;
+                }
+                
+                // 動画の高さを基準に位置と高さを設定
+                if (containerRect && mediaRect) {
+                    const mediaHeight = mediaRect.height;
+                    const mediaTop = mediaRect.top;
+                    const containerTop = containerRect.top;
+                    
+                    // 動画の上端からの相対位置を計算
+                    // テキストボックスの上端: 動画の上から66%
+                    // テキストボックスの下端: 動画の上から97%
+                    const overlayTopPercent = 66; // 66%
+                    const overlayBottomPercent = 97; // 97%
+                    
+                    // テキストボックスの高さ = 動画の高さ × (97% - 66%)
+                    const overlayHeight = mediaHeight * (overlayBottomPercent - overlayTopPercent) / 100;
+                    
+                    // コンテナ内でのテキストボックスの上端位置
+                    // = コンテナの上端から動画の上端までの距離 + 動画の上端から66%の位置
+                    const overlayTopInContainer = (mediaTop - containerTop) + (mediaHeight * overlayTopPercent / 100);
+                    
+                    // コンテナの下端からの距離 = コンテナの高さ - (上端位置 + 高さ)
+                    const distanceFromContainerBottom = containerRect.height - (overlayTopInContainer + overlayHeight);
+                    
+                    overlay.style.bottom = `${distanceFromContainerBottom}px`;
+                    overlay.style.height = `${overlayHeight}px`;
+                    overlay.style.maxHeight = `${overlayHeight}px`;
+                    overlay.style.minHeight = `${overlayHeight}px`;
+                    
+                    // 内部要素の高さを調整
+                    // 白地の高さから、padding、gap、ボタンの高さを引いた値がテキストボックスの高さ
+                    const overlayPadding = 20; // padding: 20px（上下）
+                    const gap = 15; // gap: 15px（テキストボックスとボタンの間）
+                    
+                    // ボタンの高さを取得
+                    const submitBtn = overlay.querySelector('.submit-btn');
+                    const newQuestionBtn = overlay.querySelector('.new-question-btn');
+                    const button = submitBtn || newQuestionBtn;
+                    
+                    let buttonHeight = 44; // デフォルト44px
+                    if (button) {
+                        // ボタンが非表示の場合でも高さを取得できるようにする
+                        const originalVisibility = button.style.visibility;
+                        const originalOpacity = button.style.opacity;
+                        button.style.visibility = 'visible';
+                        button.style.opacity = '1';
+                        buttonHeight = button.offsetHeight || button.clientHeight || 44;
+                        button.style.visibility = originalVisibility;
+                        button.style.opacity = originalOpacity;
+                    }
+                    
+                    // テキストボックスの高さ = 白地の高さ - 上下のpadding - gap - ボタンの高さ
+                    const contentHeight = overlayHeight - (overlayPadding * 2) - gap - buttonHeight;
+                    
+                    // textareaやanswer-textの高さを調整
+                    const textarea = overlay.querySelector('textarea');
+                    const answerText = overlay.querySelector('.answer-text');
+                    
+                    if (textarea) {
+                        textarea.style.height = `${contentHeight}px`;
+                        textarea.style.minHeight = `${contentHeight}px`;
+                        textarea.style.maxHeight = `${contentHeight}px`;
+                    }
+                    
+                    if (answerText) {
+                        answerText.style.height = `${contentHeight}px`;
+                        answerText.style.minHeight = `${contentHeight}px`;
+                        answerText.style.maxHeight = `${contentHeight}px`;
+                    }
+                }
+            }
+        });
     }, 10);
 }
 
+// リサイズ処理をデバウンスする関数
+let resizeTimeout;
+function debouncedUpdateVideoSize() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(() => {
+        updateVideoSize();
+    }, 100); // 100ms待機してから実行
+}
+
 // ウィンドウリサイズ時に動画サイズを更新
-window.addEventListener('resize', updateVideoSize);
+window.addEventListener('resize', debouncedUpdateVideoSize);
+
+// 画面の向きが変わった時にも更新
+window.addEventListener('orientationchange', () => {
+    // 向きが変わった後、レイアウトが確定するまで少し待つ
+    setTimeout(() => {
+        updateVideoSize();
+    }, 200);
+});
 
 // フォーム送信処理
 questionForm.addEventListener('submit', async (e) => {
@@ -122,47 +253,55 @@ questionForm.addEventListener('submit', async (e) => {
     submitBtn.textContent = '処理中...';
     
     try {
-        // 質問エリアを非表示にする前に、サイズを保存
-        const overlayForm = document.querySelector('.overlay-form');
-        const questionInput = document.getElementById('question-input');
-        let savedFormWidth = 0;
-        let savedInputHeight = 0;
+        // 質問エリアの位置情報を保存（非表示にする前に）
+        const overlayForm = questionArea.querySelector('.overlay-form');
+        let savedBottom = null;
+        let savedHeight = null;
+        let savedWidth = null;
         
-        if (overlayForm && questionInput) {
-            savedFormWidth = overlayForm.offsetWidth;
-            savedInputHeight = questionInput.offsetHeight;
+        if (overlayForm) {
+            // getComputedStyleで実際の値を取得
+            const computedStyle = window.getComputedStyle(overlayForm);
+            savedBottom = computedStyle.bottom;
+            savedHeight = computedStyle.height;
+            savedWidth = computedStyle.width;
         }
         
         // 質問エリアを非表示、回答エリアを表示
         questionArea.classList.add('hidden');
         answerArea.classList.remove('hidden');
         
-        // 回答エリアに「はい、[QUERY]」を表示
-        answerText.textContent = `はい、${question}`;
-        answerText.style.fontSize = '36px';
+        // テキストを20文字以下に制限する関数
+        const limitTextLength = (text) => {
+            if (text.length > 20) {
+                return text.substring(0, 20);
+            }
+            return text;
+        };
         
-        // 回答エリアのテキストボックスのサイズを最初のtextareaと同じにする
-        // 少し遅延を入れてレイアウトが確定してから設定
-        setTimeout(() => {
-            const overlayAnswer = document.querySelector('.overlay-answer');
-            const answerText = document.getElementById('answer-text');
-            
-            if (overlayAnswer) {
-                if (savedFormWidth > 0) {
-                    overlayAnswer.style.width = `${savedFormWidth}px`;
-                    overlayAnswer.style.maxWidth = `${savedFormWidth}px`;
-                    overlayAnswer.style.minWidth = `${savedFormWidth}px`;
-                } else {
-                    // フォールバック: 表示されている状態でサイズを取得
-                    syncAnswerBoxSize();
-                }
+        // 回答エリアに「はい、[QUERY]」を表示
+        answerText.textContent = limitTextLength(`はい、${question}`);
+        answerText.style.fontSize = '32px';
+        
+        // 回答エリアの位置を即座に設定（一瞬の位置ずれを防ぐ）
+        const overlayAnswer = answerArea.querySelector('.overlay-answer');
+        if (overlayAnswer && savedBottom && savedBottom !== 'auto') {
+            overlayAnswer.style.bottom = savedBottom;
+            if (savedHeight && savedHeight !== 'auto') overlayAnswer.style.height = savedHeight;
+            if (savedWidth && savedWidth !== 'auto') {
+                overlayAnswer.style.width = savedWidth;
+                overlayAnswer.style.maxWidth = savedWidth;
+                overlayAnswer.style.minWidth = savedWidth;
             }
-            
-            if (answerText && savedInputHeight > 0) {
-                answerText.style.minHeight = `${savedInputHeight}px`;
-                answerText.style.height = `${savedInputHeight}px`;
-            }
-        }, 10);
+        }
+        
+        // 回答エリアが表示された後、動画サイズと位置を更新
+        // requestAnimationFrameでレイアウト確定後に実行
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                updateVideoSize();
+            });
+        });
         
         // APIリクエストを開始（Promiseを保存）
         let apiPromise = sendToAPI(question).then(answerData => {
@@ -180,33 +319,38 @@ questionForm.addEventListener('submit', async (e) => {
         const updateAnswerTextByTime = (currentTime, answerData, question) => {
             if (currentTime < TIME_SOUSOUSOUSOU_END) {
                 if (currentTime < TIME_HAI_END) {
-                    answerText.textContent = `はい、${question}`;
-                    answerText.style.fontSize = '36px';
+                    answerText.textContent = limitTextLength(`はい、${question}`);
+                    answerText.style.fontSize = '32px';
                 } else {
                     answerText.textContent = 'そうそうそうそう';
-                    answerText.style.fontSize = '36px';
+                    answerText.style.fontSize = '32px';
                 }
             } else if (!answerData) {
                 answerText.textContent = 'そうそうそうそう';
-                answerText.style.fontSize = '36px';
+                answerText.style.fontSize = '32px';
             } else if (answerData && currentTime < TIME_KI_END) {
-                answerText.textContent = answerData.ki;
-                answerText.style.fontSize = '36px';
+                answerText.textContent = limitTextLength(answerData.ki);
+                answerText.style.fontSize = '32px';
             } else if (answerData && currentTime < TIME_SHOU_END) {
-                answerText.textContent = answerData.shou;
-                answerText.style.fontSize = '36px';
+                answerText.textContent = limitTextLength(answerData.shou);
+                answerText.style.fontSize = '32px';
             } else if (answerData && currentTime < TIME_KETSU_END) {
-                answerText.textContent = answerData.ketsu;
-                answerText.style.fontSize = '36px';
+                answerText.textContent = limitTextLength(answerData.ketsu);
+                answerText.style.fontSize = '32px';
             } else if (answerData && currentTime < TIME_TTE_END) {
                 answerText.textContent = 'って…';
-                answerText.style.fontSize = '36px';
+                answerText.style.fontSize = '32px';
             } else if (answerData) {
-                answerText.textContent = 'そ！';
+                answerText.textContent = 'そ!';
+                const originalTransition = answerText.style.transition;
+                answerText.style.transition = 'none';
                 answerText.style.fontSize = '70px';
+                requestAnimationFrame(() => {
+                    answerText.style.transition = originalTransition;
+                });
             } else {
                 answerText.textContent = 'そうそうそうそう';
-                answerText.style.fontSize = '36px';
+                answerText.style.fontSize = '32px';
             }
         };
         
@@ -362,38 +506,10 @@ function displayAnswer(answer) {
 // エラーを表示
 function displayError(errorMessage) {
     answerText.textContent = errorMessage;
-    answerText.style.fontSize = '36px';
+    answerText.style.fontSize = '32px';
     
     // 回答エリアのテキストボックスのサイズを維持（既に設定されているサイズを使用）
     // サイズは送信時に設定されているので、ここでは再設定しない
-}
-
-// 回答エリアのテキストボックスのサイズを最初のtextareaと同じにする
-function syncAnswerBoxSize() {
-    const questionInput = document.getElementById('question-input');
-    const overlayAnswer = document.querySelector('.overlay-answer');
-    const overlayForm = document.querySelector('.overlay-form');
-    
-    if (questionInput && overlayAnswer && overlayForm) {
-        // 最初のtextareaのサイズを取得
-        const inputWidth = questionInput.offsetWidth;
-        const inputHeight = questionInput.offsetHeight;
-        
-        // 回答エリアのoverlayのサイズを最初のoverlayと同じにする
-        const formWidth = overlayForm.offsetWidth;
-        const formHeight = overlayForm.offsetHeight;
-        
-        overlayAnswer.style.width = `${formWidth}px`;
-        overlayAnswer.style.maxWidth = `${formWidth}px`;
-        overlayAnswer.style.minWidth = `${formWidth}px`;
-        
-        // answer-textの高さも調整（最初のtextareaと同じ高さ）
-        const answerText = document.getElementById('answer-text');
-        if (answerText) {
-            answerText.style.minHeight = `${inputHeight}px`;
-            answerText.style.height = `${inputHeight}px`;
-        }
-    }
 }
 
 // 新しい質問ボタンの処理
