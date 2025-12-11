@@ -50,7 +50,7 @@ body {
     height: 100vh;
 }
 
-.question-area, .answer-area {
+.content-area {
     transition: all 0.3s ease;
     width: 100%;
     display: flex;
@@ -80,7 +80,7 @@ body {
     max-width: 100%;
 }
 
-.overlay-form, .overlay-answer {
+.overlay {
     position: absolute;
     /* bottomはJavaScriptで動的に設定（動画の下端を基準に） */
     left: 50%;
@@ -91,6 +91,12 @@ body {
     padding: 20px;
     /* 幅はJavaScriptで動的に設定 */
     box-sizing: border-box;
+}
+
+.form-content {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
 }
 
 .question-form {
@@ -239,7 +245,7 @@ body {
         object-fit: contain;
     }
     
-    .overlay-form, .overlay-answer {
+    .overlay {
         padding: 20px;
         /* bottomはJavaScriptで動的に設定（動画の下端を基準に） */
         /* 幅はJavaScriptで動的に設定 */

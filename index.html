@@ -31,30 +31,31 @@
 <body>
     <div class="container">
         <div class="main-content">
-            <!-- 入力エリア -->
-            <div id="question-area" class="question-area">
+            <!-- コンテンツエリア（質問と回答を統合） -->
+            <div id="content-area" class="content-area">
                 <div class="video-container">
+                    <!-- 画像（質問時） -->
                     <img id="display-image" src="images/noritsukkomi.webp" alt="令和のノリツッコミ" class="main-video">
-                    <div class="overlay-form">
-                        <form id="question-form" class="question-form">
-                            <textarea 
-                                id="question-input" 
-                                placeholder="物を入力してください" 
-                                rows="3"
-                                required
-                            ></textarea>
-                            <button type="submit" class="submit-btn">ノリツッコミ</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- 回答表示エリア -->
-            <div id="answer-area" class="answer-area hidden">
-                <div class="video-container">
-                    <video id="answer-video" src="images/noritsukkomi.mp4" muted playsinline preload="metadata" class="main-video"></video>
-                    <div class="overlay-answer">
-                        <div class="answer-content">
+                    <!-- 動画（回答時） -->
+                    <video id="answer-video" src="images/noritsukkomi.mp4" muted playsinline preload="metadata" class="main-video hidden"></video>
+                    
+                    <!-- オーバーレイ（質問時と回答時で共通） -->
+                    <div id="overlay" class="overlay">
+                        <!-- フォームコンテンツ（質問時） -->
+                        <div id="form-content" class="form-content">
+                            <form id="question-form" class="question-form">
+                                <textarea 
+                                    id="question-input" 
+                                    placeholder="物を入力してください" 
+                                    rows="3"
+                                    required
+                                ></textarea>
+                                <button type="submit" class="submit-btn">ノリツッコミ</button>
+                            </form>
+                        </div>
+                        
+                        <!-- 回答コンテンツ（回答時） -->
+                        <div id="answer-content" class="answer-content hidden">
                             <div id="answer-text" class="answer-text"></div>
                             <button id="new-question-btn" class="new-question-btn">新しいノリツッコミをする</button>
                         </div>
