@@ -149,44 +149,43 @@ function updateVideoSize() {
             overlay.style.minHeight = `${overlayHeight}px`;
             
             // 内部要素の高さを調整
-            // 白地の高さから、padding、gap、ボタンの高さを引いた値がテキストボックスの高さ
             const overlayPadding = 15; // padding: 15px（上下）
-            const gap = 5; // gap: 5px（テキストボックスとボタンの間）
-            
-            // ボタンの高さを取得
-            const submitBtn = overlay.querySelector('.submit-btn');
-            const newQuestionBtn = overlay.querySelector('.new-question-btn');
-            const button = submitBtn || newQuestionBtn;
-            
-            let buttonHeight = 36; // デフォルト36px（padding: 6px 20pxの場合）
-            if (button) {
-                // ボタンが非表示の場合でも高さを取得できるようにする
-                const originalVisibility = button.style.visibility;
-                const originalOpacity = button.style.opacity;
-                button.style.visibility = 'visible';
-                button.style.opacity = '1';
-                buttonHeight = button.offsetHeight || button.clientHeight || 36;
-                button.style.visibility = originalVisibility;
-                button.style.opacity = originalOpacity;
-            }
-            
-            // テキストボックスの高さ = 白地の高さ - 上下のpadding - gap - ボタンの高さ
-            const contentHeight = overlayHeight - (overlayPadding * 2) - gap - buttonHeight;
             
             // textareaやanswer-textの高さを調整
             const textarea = overlay.querySelector('textarea');
             const answerText = overlay.querySelector('.answer-text');
+            const formContent = overlay.querySelector('.form-content');
+            const answerContent = overlay.querySelector('.answer-content');
             
-            if (textarea) {
-                textarea.style.height = `${contentHeight}px`;
-                textarea.style.minHeight = `${contentHeight}px`;
-                textarea.style.maxHeight = `${contentHeight}px`;
+            // フォーム表示時（質問時）の処理
+            if (formContent && !formContent.classList.contains('hidden')) {
+                const gap = 5; // gap: 5px（テキストボックスとボタンの間）
+                
+                // ボタンの高さを取得
+                const submitBtn = overlay.querySelector('.submit-btn');
+                let buttonHeight = 36; // デフォルト36px
+                if (submitBtn) {
+                    buttonHeight = submitBtn.offsetHeight || submitBtn.clientHeight || 36;
+                }
+                
+                // テキストボックスの高さ = 白地の高さ - 上下のpadding - gap - ボタンの高さ
+                const contentHeight = overlayHeight - (overlayPadding * 2) - gap - buttonHeight;
+                
+                if (textarea) {
+                    textarea.style.height = `${contentHeight}px`;
+                    textarea.style.minHeight = `${contentHeight}px`;
+                    textarea.style.maxHeight = `${contentHeight}px`;
+                }
             }
             
-            if (answerText) {
-                answerText.style.height = `${contentHeight}px`;
-                answerText.style.minHeight = `${contentHeight}px`;
-                answerText.style.maxHeight = `${contentHeight}px`;
+            // 回答表示時はanswer-textの高さを制限しない（中央配置のため）
+            if (answerContent && !answerContent.classList.contains('hidden')) {
+                if (answerText) {
+                    // 中央配置のため、高さは自動
+                    answerText.style.height = 'auto';
+                    answerText.style.minHeight = 'auto';
+                    answerText.style.maxHeight = 'none';
+                }
             }
         }
     }, 10);
@@ -326,10 +325,19 @@ questionForm.addEventListener('submit', async (e) => {
                 answerText.textContent = 'そ!';
                 const originalTransition = answerText.style.transition;
                 answerText.style.transition = 'none';
-                answerText.style.fontSize = '70px';
+                answerText.style.fontSize = '60px';
                 requestAnimationFrame(() => {
                     answerText.style.transition = originalTransition;
                 });
+                
+                // 「そ!」表示後、ボタンを段階的に表示
+                setTimeout(() => {
+                    newQuestionBtn.style.display = 'block';
+                    // 少し遅延を入れてからフェードイン
+                    setTimeout(() => {
+                        newQuestionBtn.classList.add('visible');
+                    }, 100);
+                }, 500); // 「そ!」表示から0.5秒後にボタンを表示開始
             } else {
                 answerText.textContent = 'そうそうそうそう';
                 answerText.style.fontSize = '32px';
@@ -404,10 +412,9 @@ questionForm.addEventListener('submit', async (e) => {
         
         answerVideo.addEventListener('timeupdate', checkTimeUpdate);
         
-        // 最初はボタンを非表示（レイアウトは維持）
-        newQuestionBtn.style.visibility = 'hidden';
-        newQuestionBtn.style.opacity = '0';
-        newQuestionBtn.style.pointerEvents = 'none';
+        // 最初はボタンを完全に非表示
+        newQuestionBtn.style.display = 'none';
+        newQuestionBtn.classList.remove('visible');
         
         // 動画の最後で固定する処理
         answerVideo.addEventListener('ended', () => {
@@ -419,10 +426,13 @@ questionForm.addEventListener('submit', async (e) => {
             }
             // timeupdateイベントリスナーを削除
             answerVideo.removeEventListener('timeupdate', checkTimeUpdate);
-            // ボタンを表示
-            newQuestionBtn.style.visibility = 'visible';
-            newQuestionBtn.style.opacity = '1';
-            newQuestionBtn.style.pointerEvents = 'auto';
+            // ボタンがまだ表示されていない場合は表示（「そ!」が表示されなかった場合のフォールバック）
+            if (newQuestionBtn.style.display === 'none') {
+                newQuestionBtn.style.display = 'block';
+                setTimeout(() => {
+                    newQuestionBtn.classList.add('visible');
+                }, 100);
+            }
         }, { once: true });
         
     } catch (error) {
@@ -495,10 +505,9 @@ function displayError(errorMessage) {
 
 // 新しい質問ボタンの処理
 newQuestionBtn.addEventListener('click', () => {
-    // ボタンを非表示にする（レイアウトは維持）
-    newQuestionBtn.style.visibility = 'hidden';
-    newQuestionBtn.style.opacity = '0';
-    newQuestionBtn.style.pointerEvents = 'none';
+    // ボタンを完全に非表示にする
+    newQuestionBtn.style.display = 'none';
+    newQuestionBtn.classList.remove('visible');
     
     // 動画を非表示、画像を表示
     answerVideo.classList.add('hidden');

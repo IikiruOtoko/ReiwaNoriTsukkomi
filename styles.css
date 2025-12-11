@@ -192,6 +192,8 @@ body {
     flex-direction: column;
     gap: 10px;
     width: 100%;
+    height: 100%;
+    position: relative;
 }
 
 .answer-content h3 {
@@ -221,23 +223,41 @@ body {
     background: transparent;
     overflow: hidden;
     transition: all 0.3s ease;
-    /* margin-bottomは削除（ボタンとのgapは親要素で管理） */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    height: auto;
+    min-height: auto;
+    max-height: none;
 }
 
 .new-question-btn {
     background: rgb(229, 8, 196);
     color: white;
     border: none;
-    padding: 6px 20px;
-    border-radius: 20px;
-    font-size: 14px;
+    padding: 4px 16px;
+    border-radius: 18px;
+    font-size: 12px;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
     text-transform: none;
     letter-spacing: 1px;
     align-self: flex-end;
     width: fit-content;
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.new-question-btn.visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
 }
 
 .new-question-btn:hover {
@@ -308,8 +328,10 @@ body {
     }
     
     .new-question-btn {
-        padding: 8px 20px;
-        font-size: 14px;
+        padding: 4px 16px;
+        font-size: 12px;
+        bottom: 0;
+        right: 0;
     }
     
     .answer-text {
