@@ -4,12 +4,12 @@ const VIDEO_WIDTH = 1920;
 const VIDEO_HEIGHT = 1080;
 
 // テキスト表示の切り替え時間（秒）
-const TIME_SOUSOUSOUSOU_END = 3.9; // 「そうそうそうそう」の表示終了時間
+const TIME_HAI_END = 2.4; // 「はい、[QUERY]」の表示終了時間
+const TIME_SOUSOUSOUSOU_END = 3.9; // 「そうそうそうそう」の表示終了時間（この時点でAPI結果をチェック）
 const TIME_KI_END = 5.5; // kiの表示終了時間
 const TIME_SHOU_END = 7.1; // shouの表示終了時間
 const TIME_KETSU_END = 8.6; // ketsuの表示終了時間
 const TIME_TTE_END = 9.3; // 「って…」の表示終了時間
-const TIME_API_CHECK = 2.4; // API結果をチェックする時間
 
 // DOM要素の取得
 const questionForm = document.getElementById('question-form');
@@ -24,8 +24,8 @@ const displayVideo = document.getElementById('display-video');
 const answerVideo = document.getElementById('answer-video');
 
 // API設定
-// const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
-const API_URL_BASE = 'http://localhost:10000/';
+const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
+// const API_URL_BASE = 'http://localhost:10000/';
 const API_URL = API_URL_BASE + 'nori_tsukkomi';
 
 // 動画サイズを動的に計算する関数
@@ -178,10 +178,13 @@ questionForm.addEventListener('submit', async (e) => {
         
         // 動画の再生時間に応じてテキストを更新する関数
         const updateAnswerTextByTime = (currentTime, answerData, question) => {
-            if (currentTime < TIME_API_CHECK) {
-                // TIME_API_CHECKまでは「はい、[QUERY]」を表示
-                answerText.textContent = `はい、${question}`;
-            } else if (currentTime < TIME_SOUSOUSOUSOU_END) {
+            if (currentTime < TIME_SOUSOUSOUSOU_END) {
+                if (currentTime < TIME_HAI_END) {
+                    answerText.textContent = `はい、${question}`;
+                } else {
+                    answerText.textContent = 'そうそうそうそう';
+                }
+            } else if (!answerData) {
                 answerText.textContent = 'そうそうそうそう';
             } else if (answerData && currentTime < TIME_KI_END) {
                 answerText.textContent = answerData.ki;
@@ -189,10 +192,12 @@ questionForm.addEventListener('submit', async (e) => {
                 answerText.textContent = answerData.shou;
             } else if (answerData && currentTime < TIME_KETSU_END) {
                 answerText.textContent = answerData.ketsu;
-            } else if (currentTime < TIME_TTE_END) {
+            } else if (answerData && currentTime < TIME_TTE_END) {
                 answerText.textContent = 'って…';
-            } else {
+            } else if (answerData) {
                 answerText.textContent = 'そ！';
+            } else {
+                answerText.textContent = 'そうそうそうそう';
             }
         };
         
@@ -223,8 +228,8 @@ questionForm.addEventListener('submit', async (e) => {
         const checkTimeUpdate = () => {
             const currentTime = answerVideo.currentTime;
             
-            // APIチェック時間時点でAPI結果をチェック
-            if (currentTime >= TIME_API_CHECK && !hasReached27Seconds) {
+            // 「そうそうそうそう」の終了時点でAPI結果をチェック
+            if (currentTime >= TIME_SOUSOUSOUSOU_END && !hasReached27Seconds) {
                 hasReached27Seconds = true;
                 
                 if (apiResult) {
@@ -245,7 +250,7 @@ questionForm.addEventListener('submit', async (e) => {
             if (apiResult && apiResult.success) {
                 updateAnswerTextByTime(currentTime, apiResult.answerData, question);
             } else {
-                // API結果がまだない場合でも、TIME_API_CHECKまでは「はい、[QUERY]」を表示
+                // API結果がまだない場合でも、TIME_SOUSOUSOUSOU_ENDまでは「はい、[QUERY]」や「そうそうそうそう」を表示
                 updateAnswerTextByTime(currentTime, null, question);
             }
         };
