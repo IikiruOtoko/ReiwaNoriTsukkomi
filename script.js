@@ -111,7 +111,7 @@ function updateVideoSize() {
                 overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
             } else {
                 // スマホの場合はメディアの幅の98%に設定
-                overlayWidth = actualMediaWidth * 0.98;
+                overlayWidth = actualMediaWidth * 0.965;
             }
             // 計算したwidthを固定widthとして保存
             fixedOverlayWidth = overlayWidth;
