@@ -225,14 +225,26 @@ questionForm.addEventListener('submit', async (e) => {
                 }
                 // 動画が停止している場合は再開して最後まで再生
                 if (answerVideo.paused) {
-                    answerVideo.play();
+                    answerVideo.play().catch(error => {
+                        console.error('動画の再開に失敗しました:', error);
+                    });
                 }
             }
         });
         
         // 動画を最初から再生開始
         answerVideo.currentTime = 0;
-        answerVideo.play();
+        // スマホでの再生を確実にするため、Promiseで処理
+        answerVideo.play().catch(error => {
+            console.error('動画の再生に失敗しました:', error);
+            // 再生が拒否された場合、ユーザーインタラクション後に再試行
+            const retryPlay = () => {
+                answerVideo.play().catch(err => console.error('再試行も失敗:', err));
+            };
+            // タッチイベントで再試行
+            document.addEventListener('touchstart', retryPlay, { once: true });
+            document.addEventListener('click', retryPlay, { once: true });
+        });
         
         // 動画の再生時間を監視してテキストを更新
         const checkTimeUpdate = () => {
@@ -424,12 +436,45 @@ async function warmupAPI() {
     }
 }
 
+// 動画の読み込みエラーハンドリング
+function setupVideoErrorHandling(video, videoName) {
+    video.addEventListener('error', (e) => {
+        console.error(`${videoName}の読み込みエラー:`, e);
+        const error = video.error;
+        if (error) {
+            console.error('エラーコード:', error.code);
+            console.error('エラーメッセージ:', error.message);
+        }
+        // 動画のパスを再試行
+        const currentSrc = video.src;
+        video.src = '';
+        video.load();
+        setTimeout(() => {
+            video.src = currentSrc;
+            video.load();
+        }, 100);
+    });
+    
+    video.addEventListener('loadstart', () => {
+        console.log(`${videoName}の読み込み開始`);
+    });
+    
+    video.addEventListener('loadeddata', () => {
+        console.log(`${videoName}のデータ読み込み完了`);
+    });
+    
+    video.addEventListener('canplay', () => {
+        console.log(`${videoName}の再生準備完了`);
+    });
+}
+
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', async () => {
     warmupAPI();
     
-    // 最初の動画を最初のフレームで固定（再生しない）
+    // すべての動画要素にエラーハンドリングを設定
     if (displayVideo) {
+        setupVideoErrorHandling(displayVideo, 'display-video');
         displayVideo.pause();
         displayVideo.currentTime = 0;
         // 動画のメタデータが読み込まれたら最初のフレームで固定
@@ -437,6 +482,20 @@ document.addEventListener('DOMContentLoaded', async () => {
             displayVideo.currentTime = 0;
             displayVideo.pause();
         });
+        // 動画の読み込みを明示的に開始
+        displayVideo.load();
+    }
+    
+    if (answerVideo) {
+        setupVideoErrorHandling(answerVideo, 'answer-video');
+        // 動画の読み込みを明示的に開始
+        answerVideo.load();
+    }
+    
+    if (loadingVideo) {
+        setupVideoErrorHandling(loadingVideo, 'loading-video');
+        // 動画の読み込みを明示的に開始
+        loadingVideo.load();
     }
     
     questionInput.focus();

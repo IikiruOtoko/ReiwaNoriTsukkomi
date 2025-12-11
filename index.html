@@ -34,7 +34,7 @@
             <!-- 入力エリア -->
             <div id="question-area" class="question-area">
                 <div class="video-container">
-                    <video id="display-video" src="images/noritsukkomi.mp4" muted playsinline class="main-video"></video>
+                    <video id="display-video" src="images/noritsukkomi.mp4" muted playsinline preload="metadata" class="main-video"></video>
                     <div class="overlay-form">
                         <form id="question-form" class="question-form">
                             <textarea 
@@ -52,7 +52,7 @@
             <!-- 回答表示エリア -->
             <div id="answer-area" class="answer-area hidden">
                 <div class="video-container">
-                    <video id="answer-video" src="images/noritsukkomi.mp4" muted playsinline class="main-video"></video>
+                    <video id="answer-video" src="images/noritsukkomi.mp4" muted playsinline preload="metadata" class="main-video"></video>
                     <div class="overlay-answer">
                         <div class="answer-content">
                             <div id="answer-text" class="answer-text"></div>
@@ -65,7 +65,7 @@
             <!-- ローディングエリア -->
             <div id="loading-area" class="loading-area hidden">
                 <div class="video-container">
-                    <video id="loading-video" src="images/noritsukkomi.mp4" autoplay loop muted playsinline class="main-video"></video>
+                    <video id="loading-video" src="images/noritsukkomi.mp4" autoplay loop muted playsinline preload="auto" class="main-video"></video>
                 </div>
             </div>
         </div>
