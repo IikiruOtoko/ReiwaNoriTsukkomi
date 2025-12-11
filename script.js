@@ -140,6 +140,7 @@ questionForm.addEventListener('submit', async (e) => {
         
         // 回答エリアに「はい、[QUERY]」を表示
         answerText.textContent = `はい、${question}`;
+        answerText.style.fontSize = '36px';
         
         // 回答エリアのテキストボックスのサイズを最初のtextareaと同じにする
         // 少し遅延を入れてレイアウトが確定してから設定
@@ -181,23 +182,32 @@ questionForm.addEventListener('submit', async (e) => {
             if (currentTime < TIME_SOUSOUSOUSOU_END) {
                 if (currentTime < TIME_HAI_END) {
                     answerText.textContent = `はい、${question}`;
+                    answerText.style.fontSize = '36px';
                 } else {
                     answerText.textContent = 'そうそうそうそう';
+                    answerText.style.fontSize = '36px';
                 }
             } else if (!answerData) {
                 answerText.textContent = 'そうそうそうそう';
+                answerText.style.fontSize = '36px';
             } else if (answerData && currentTime < TIME_KI_END) {
                 answerText.textContent = answerData.ki;
+                answerText.style.fontSize = '36px';
             } else if (answerData && currentTime < TIME_SHOU_END) {
                 answerText.textContent = answerData.shou;
+                answerText.style.fontSize = '36px';
             } else if (answerData && currentTime < TIME_KETSU_END) {
                 answerText.textContent = answerData.ketsu;
+                answerText.style.fontSize = '36px';
             } else if (answerData && currentTime < TIME_TTE_END) {
                 answerText.textContent = 'って…';
+                answerText.style.fontSize = '36px';
             } else if (answerData) {
                 answerText.textContent = 'そ！';
+                answerText.style.fontSize = '70px';
             } else {
                 answerText.textContent = 'そうそうそうそう';
+                answerText.style.fontSize = '36px';
             }
         };
         
@@ -341,6 +351,7 @@ function displayAnswer(answer) {
 // エラーを表示
 function displayError(errorMessage) {
     answerText.textContent = errorMessage;
+    answerText.style.fontSize = '36px';
     
     // 回答エリアのテキストボックスのサイズを維持（既に設定されているサイズを使用）
     // サイズは送信時に設定されているので、ここでは再設定しない
