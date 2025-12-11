@@ -102,11 +102,17 @@ body {
 .question-form {
     display: flex;
     flex-direction: column;
+    gap: 8px;
+}
+
+.input-group {
+    display: flex;
     gap: 10px;
+    align-items: center;
 }
 
 #question-input {
-    width: 100%;
+    flex: 1;
     padding: 15px;
     border: 2px solid #e1e5e9;
     border-radius: 10px;
@@ -128,16 +134,22 @@ body {
     background: rgb(229, 8, 196);
     color: white;
     border: none;
-    padding: 6px 20px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 600;
+    padding: 0;
+    border-radius: 50%;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: all 0.3s ease;
-    text-transform: none;
-    letter-spacing: 1px;
-    align-self: flex-end;
-    width: fit-content;
+    flex-shrink: 0;
+    margin-top: 0;
+}
+
+.submit-btn svg {
+    width: 24px;
+    height: 24px;
 }
 
 .submit-btn:hover {
@@ -153,6 +165,23 @@ body {
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+.terms-notice {
+    font-size: 10px;
+    color: #666;
+    line-height: 1.5;
+    margin-top: 10px;
+    text-align: left;
+}
+
+.terms-notice a {
+    color: #666;
+    text-decoration: underline;
+}
+
+.terms-notice a:hover {
+    color: #333;
 }
 
 .answer-content {
@@ -253,15 +282,29 @@ body {
         /* 幅はJavaScriptで動的に設定 */
     }
     
+    .input-group {
+        gap: 8px;
+        align-items: center;
+    }
+    
     #question-input {
-        padding: 15px;
+        padding: 12px;
         font-size: 16px;
         height: 140px;
     }
     
     .submit-btn {
-        padding: 8px 20px;
-        font-size: 14px;
+        width: 44px;
+        height: 44px;
+    }
+    
+    .submit-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .terms-notice {
+        font-size: 10px;
     }
     
     .new-question-btn {

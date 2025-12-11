@@ -226,7 +226,6 @@ questionForm.addEventListener('submit', async (e) => {
     // 送信ボタンを無効化
     const submitBtn = questionForm.querySelector('.submit-btn');
     submitBtn.disabled = true;
-    submitBtn.textContent = '処理中...';
     
     try {
         // オーバーレイの位置情報を保存（切り替え前に）
@@ -432,7 +431,6 @@ questionForm.addEventListener('submit', async (e) => {
     } finally {
         // 送信ボタンを再有効化
         submitBtn.disabled = false;
-        submitBtn.textContent = 'ノリツッコミ';
     }
 });
 
