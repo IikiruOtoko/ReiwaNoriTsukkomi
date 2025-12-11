@@ -450,7 +450,7 @@ async function sendToAPI(question) {
     
     if (!response.ok) {
         const errorText = await response.text();
-        console.log(errorText);
+        // console.log(errorText);
         throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
     }
     
@@ -529,7 +529,7 @@ async function warmupAPI() {
             method: 'GET'
         });
     } catch (error) {
-        console.log(error);
+        // console.log(error);
     }
 }
 
@@ -553,15 +553,15 @@ function setupVideoErrorHandling(video, videoName) {
     });
     
     video.addEventListener('loadstart', () => {
-        console.log(`${videoName}の読み込み開始`);
+        // console.log(`${videoName}の読み込み開始`);
     });
     
     video.addEventListener('loadeddata', () => {
-        console.log(`${videoName}のデータ読み込み完了`);
+        // console.log(`${videoName}のデータ読み込み完了`);
     });
     
     video.addEventListener('canplay', () => {
-        console.log(`${videoName}の再生準備完了`);
+        // console.log(`${videoName}の再生準備完了`);
     });
 }
 
@@ -577,7 +577,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // 画像のロード後にサイズ計算を行う
         const initializeAfterImageLoad = () => {
-            console.log('display-imageの読み込み完了');
+            // console.log('display-imageの読み込み完了');
             // 画像がロードされた後にサイズ計算を実行
             updateVideoSize();
             questionInput.focus();
