@@ -3,6 +3,11 @@ const VIDEO_ASPECT_RATIO = 16 / 9; // 一般的な動画のアスペクト比（
 const VIDEO_WIDTH = 1920;
 const VIDEO_HEIGHT = 1080;
 
+// 実際の動画サイズ（既知）
+const ACTUAL_VIDEO_WIDTH = 960;
+const ACTUAL_VIDEO_HEIGHT = 1712;
+const ACTUAL_VIDEO_ASPECT_RATIO = ACTUAL_VIDEO_WIDTH / ACTUAL_VIDEO_HEIGHT; // 約0.5607
+
 // テキスト表示の切り替え時間（秒）
 const TIME_HAI_END = 2.4; // 「はい、[QUERY]」の表示終了時間
 const TIME_SOUSOUSOUSOU_END = 3.9; // 「そうそうそうそう」の表示終了時間（この時点でAPI結果をチェック）
@@ -23,10 +28,17 @@ const answerVideo = document.getElementById('answer-video');
 const overlay = document.getElementById('overlay');
 const formContent = document.getElementById('form-content');
 const answerContent = document.getElementById('answer-content');
+const langJaBtn = document.getElementById('lang-ja');
+const langEnBtn = document.getElementById('lang-en');
+const languageToggle = document.getElementById('language-toggle');
+const termsNotice = document.querySelector('.terms-notice');
+
+// 言語状態（'ja' または 'en'）
+let currentLanguage = 'ja';
 
 // API設定
-const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
-// const API_URL_BASE = 'http://localhost:10000/';
+// const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
+const API_URL_BASE = 'http://localhost:10000/';
 const API_URL = API_URL_BASE + 'nori_tsukkomi';
 
 // overlayの固定width（一度設定したら変更しない）
@@ -70,22 +82,27 @@ function updateVideoSize() {
     const isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
     const mediaElements = document.querySelectorAll('.main-video');
     
-    if (isMobilePortrait) {
+    // 動画サイズを計算（デスクトップの場合）
+    let calculatedVideoWidth = null;
+    let calculatedVideoHeight = null;
+    if (!isMobilePortrait) {
+        const { width, height } = calculateVideoSize();
+        calculatedVideoWidth = width;
+        calculatedVideoHeight = height;
+        mediaElements.forEach(element => {
+            element.style.width = `${width}px`;
+            element.style.height = `${height}px`;
+        });
+    } else {
         // スマホの場合はCSSで制御（JavaScriptでサイズを設定しない）
         mediaElements.forEach(element => {
             element.style.width = '';
             element.style.height = '';
         });
-    } else {
-        // デスクトップの場合は動的にサイズを計算
-        const { width, height } = calculateVideoSize();
-        mediaElements.forEach(element => {
-            element.style.width = `${width}px`;
-            element.style.height = `${height}px`;
-        });
     }
     
     // 動画・画像のサイズ設定後にテキストボックスの幅と位置を調整（少し遅延を入れる）
+    // calculatedVideoWidthを確実に参照できるように、クロージャで保持
     setTimeout(() => {
         const container = contentArea.querySelector('.video-container');
         if (!container || !overlay) return;
@@ -95,7 +112,6 @@ function updateVideoSize() {
         
         if (!currentMedia) return;
         
-        const actualMediaWidth = currentMedia.offsetWidth || currentMedia.clientWidth;
         const mediaRect = currentMedia.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
         
@@ -106,12 +122,24 @@ function updateVideoSize() {
             overlayWidth = fixedOverlayWidth;
         } else {
             // 固定widthが設定されていない場合は計算
-            if (!isMobilePortrait) {
-                // デスクトップの場合は実際のメディアの幅を取得して50%に設定（最大500px）
-                overlayWidth = Math.min(actualMediaWidth * 0.5, 500);
+            // 動画の高さから横幅を計算（動画サイズ: 960 * 1712）
+            const actualMediaHeight = mediaRect.height;
+            if (actualMediaHeight > 0) {
+                // 動画の高さから、アスペクト比を使って幅を計算
+                const calculatedVideoWidthFromHeight = actualMediaHeight * ACTUAL_VIDEO_ASPECT_RATIO;
+                // その幅の0.965倍をoverlayの幅とする
+                overlayWidth = calculatedVideoWidthFromHeight * 0.965;
             } else {
-                // スマホの場合はメディアの幅の98%に設定
-                overlayWidth = actualMediaWidth * 0.965;
+                // フォールバック: 従来の方法
+                if (!isMobilePortrait) {
+                    const videoWidth = calculatedVideoWidth !== null && calculatedVideoWidth > 0 
+                        ? calculatedVideoWidth 
+                        : calculateVideoSize().width;
+                    overlayWidth = videoWidth * 0.965;
+                } else {
+                    const actualMediaWidth = currentMedia.offsetWidth || currentMedia.clientWidth;
+                    overlayWidth = actualMediaWidth * 0.965;
+                }
             }
             // 計算したwidthを固定widthとして保存
             fixedOverlayWidth = overlayWidth;
@@ -248,16 +276,21 @@ questionForm.addEventListener('submit', async (e) => {
         formContent.classList.add('hidden');
         answerContent.classList.remove('hidden');
         
-        // テキストを20文字以下に制限する関数
+        // テキストを文字数制限する関数（日本語: 20文字、英語: 40文字）
         const limitTextLength = (text) => {
-            if (text.length > 20) {
-                return text.substring(0, 20);
+            const maxLength = currentLanguage === 'ja' ? 20 : 40;
+            if (text.length > maxLength) {
+                return text.substring(0, maxLength);
             }
             return text;
         };
         
-        // 回答エリアに「はい、[QUERY]」を表示
-        answerText.textContent = limitTextLength(`はい、${question}`);
+        // 回答エリアに初期テキストを表示
+        if (currentLanguage === 'ja') {
+            answerText.textContent = limitTextLength(`はい、${question}`);
+        } else {
+            answerText.textContent = limitTextLength(`Here, ${question}.`);
+        }
         answerText.style.fontSize = '32px';
         
         // オーバーレイの位置を即座に設定（一瞬の位置ずれを防ぐ）
@@ -298,49 +331,98 @@ questionForm.addEventListener('submit', async (e) => {
         
         // 動画の再生時間に応じてテキストを更新する関数
         const updateAnswerTextByTime = (currentTime, answerData, question) => {
-            if (currentTime < TIME_SOUSOUSOUSOU_END) {
-                if (currentTime < TIME_HAI_END) {
-                    answerText.textContent = limitTextLength(`はい、${question}`);
+            if (currentLanguage === 'ja') {
+                // 日本語版
+                if (currentTime < TIME_SOUSOUSOUSOU_END) {
+                    if (currentTime < TIME_HAI_END) {
+                        answerText.textContent = limitTextLength(`はい、${question}`);
+                        answerText.style.fontSize = '32px';
+                    } else {
+                        answerText.textContent = 'そうそうそうそう';
+                        answerText.style.fontSize = '32px';
+                    }
+                } else if (!answerData) {
+                    answerText.textContent = 'そうそうそうそう';
                     answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_KI_END) {
+                    answerText.textContent = limitTextLength(answerData.ki);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_SHOU_END) {
+                    answerText.textContent = limitTextLength(answerData.shou);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_KETSU_END) {
+                    answerText.textContent = limitTextLength(answerData.ketsu);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_TTE_END) {
+                    answerText.textContent = 'って…';
+                    answerText.style.fontSize = '32px';
+                } else if (answerData) {
+                    answerText.textContent = 'そ!';
+                    const originalTransition = answerText.style.transition;
+                    answerText.style.transition = 'none';
+                    answerText.style.fontSize = '60px';
+                    requestAnimationFrame(() => {
+                        answerText.style.transition = originalTransition;
+                    });
+                    
+                    // 「そ!」表示後、ボタンを段階的に表示
+                    setTimeout(() => {
+                        newQuestionBtn.style.display = 'block';
+                        // 少し遅延を入れてからフェードイン
+                        setTimeout(() => {
+                            newQuestionBtn.classList.add('visible');
+                        }, 100);
+                    }, 1500); // 「そ!」表示から0.2秒後にボタンを表示開始
                 } else {
                     answerText.textContent = 'そうそうそうそう';
                     answerText.style.fontSize = '32px';
                 }
-            } else if (!answerData) {
-                answerText.textContent = 'そうそうそうそう';
-                answerText.style.fontSize = '32px';
-            } else if (answerData && currentTime < TIME_KI_END) {
-                answerText.textContent = limitTextLength(answerData.ki);
-                answerText.style.fontSize = '32px';
-            } else if (answerData && currentTime < TIME_SHOU_END) {
-                answerText.textContent = limitTextLength(answerData.shou);
-                answerText.style.fontSize = '32px';
-            } else if (answerData && currentTime < TIME_KETSU_END) {
-                answerText.textContent = limitTextLength(answerData.ketsu);
-                answerText.style.fontSize = '32px';
-            } else if (answerData && currentTime < TIME_TTE_END) {
-                answerText.textContent = 'って…';
-                answerText.style.fontSize = '32px';
-            } else if (answerData) {
-                answerText.textContent = 'そ!';
-                const originalTransition = answerText.style.transition;
-                answerText.style.transition = 'none';
-                answerText.style.fontSize = '60px';
-                requestAnimationFrame(() => {
-                    answerText.style.transition = originalTransition;
-                });
-                
-                // 「そ!」表示後、ボタンを段階的に表示
-                setTimeout(() => {
-                    newQuestionBtn.style.display = 'block';
-                    // 少し遅延を入れてからフェードイン
-                    setTimeout(() => {
-                        newQuestionBtn.classList.add('visible');
-                    }, 100);
-                }, 1500); // 「そ!」表示から0.2秒後にボタンを表示開始
             } else {
-                answerText.textContent = 'そうそうそうそう';
-                answerText.style.fontSize = '32px';
+                // 英語版
+                if (currentTime < TIME_SOUSOUSOUSOU_END) {
+                    if (currentTime < TIME_HAI_END) {
+                        answerText.textContent = limitTextLength(`Here, ${question}.`);
+                        answerText.style.fontSize = '32px';
+                    } else {
+                        answerText.textContent = 'Yeah, yeah, yeah.';
+                        answerText.style.fontSize = '32px';
+                    }
+                } else if (!answerData) {
+                    answerText.textContent = 'Yeah, yeah, yeah.';
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_KI_END) {
+                    answerText.textContent = limitTextLength(answerData.ki_en);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_SHOU_END) {
+                    answerText.textContent = limitTextLength(answerData.shou_en);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_KETSU_END) {
+                    answerText.textContent = limitTextLength(answerData.ketsu_en);
+                    answerText.style.fontSize = '32px';
+                } else if (answerData && currentTime < TIME_TTE_END) {
+                    answerText.textContent = 'Wait...';
+                    answerText.style.fontSize = '32px';
+                } else if (answerData) {
+                    answerText.textContent = 'Yeah!';
+                    const originalTransition = answerText.style.transition;
+                    answerText.style.transition = 'none';
+                    answerText.style.fontSize = '60px';
+                    requestAnimationFrame(() => {
+                        answerText.style.transition = originalTransition;
+                    });
+                    
+                    // 「Yeah!」表示後、ボタンを段階的に表示
+                    setTimeout(() => {
+                        newQuestionBtn.style.display = 'block';
+                        // 少し遅延を入れてからフェードイン
+                        setTimeout(() => {
+                            newQuestionBtn.classList.add('visible');
+                        }, 100);
+                    }, 1500); // 「Yeah!」表示から0.2秒後にボタンを表示開始
+                } else {
+                    answerText.textContent = 'Yeah, yeah, yeah.';
+                    answerText.style.fontSize = '32px';
+                }
             }
         };
         
@@ -468,11 +550,14 @@ async function sendToAPI(question) {
     
     // JSON形式のレスポンスをパース
     if (data.ki && data.shou && data.ketsu) {
-        // JSONオブジェクトとして返す
+        // JSONオブジェクトとして返す（英語版も含む）
         return {
             ki: data.ki,
             shou: data.shou,
-            ketsu: data.ketsu
+            ketsu: data.ketsu,
+            ki_en: data.ki_en || '',
+            shou_en: data.shou_en || '',
+            ketsu_en: data.ketsu_en || ''
         };
     } else {
         throw new Error('Invalid response format from API');
@@ -624,5 +709,44 @@ document.addEventListener('DOMContentLoaded', async () => {
             questionForm.dispatchEvent(new Event('submit'));
         }
     });
+    
+    // UIテキストを言語に応じて更新する関数
+    function updateUITexts() {
+        if (currentLanguage === 'ja') {
+            // 日本語
+            questionInput.placeholder = '物を入力してください';
+            if (termsNotice) {
+                termsNotice.innerHTML = '送信をもって<a href="terms-of-use-and-privacy-policy.html">利用規約</a>と<a href="terms-of-use-and-privacy-policy.html">プライバシーポリシー</a>に同意したものとみなします。内容はAI処理されます。個人情報や機密情報の記載はお控えください。';
+            }
+            newQuestionBtn.textContent = '新しいノリツッコミ';
+        } else {
+            // 英語
+            questionInput.placeholder = 'Enter an item';
+            if (termsNotice) {
+                termsNotice.innerHTML = 'By submitting, you agree to our <a href="terms-of-use-and-privacy-policy.html">Terms of Use</a> and <a href="terms-of-use-and-privacy-policy.html">Privacy Policy</a>. Content is processed by AI. Please refrain from including personal or confidential information.';
+            }
+            newQuestionBtn.textContent = 'New Nori Tsukkomi';
+        }
+    }
+    
+    // 言語切り替えボタンのイベントリスナー
+    if (langJaBtn && langEnBtn) {
+        langJaBtn.addEventListener('click', () => {
+            currentLanguage = 'ja';
+            langJaBtn.classList.add('active');
+            langEnBtn.classList.remove('active');
+            updateUITexts();
+        });
+        
+        langEnBtn.addEventListener('click', () => {
+            currentLanguage = 'en';
+            langEnBtn.classList.add('active');
+            langJaBtn.classList.remove('active');
+            updateUITexts();
+        });
+    }
+    
+    // 初期表示時にUIテキストを設定
+    updateUITexts();
 });
 
