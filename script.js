@@ -206,8 +206,8 @@ function updateVideoSize() {
                     buttonHeight = submitBtn.offsetHeight || submitBtn.clientHeight || 36;
                 }
                 
-                // テキストボックスの高さ = 白地の高さ - 上下のpadding - gap - ボタンの高さ
-                const contentHeight = overlayHeight - (overlayPadding * 2) - gap - buttonHeight;
+                // テキストボックスの高さ = overlayの高さの50%
+                const contentHeight = overlayHeight * 0.55;
                 
                 if (textarea) {
                     textarea.style.height = `${contentHeight}px`;
