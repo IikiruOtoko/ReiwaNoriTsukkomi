@@ -37,8 +37,8 @@ const termsNotice = document.querySelector('.terms-notice');
 let currentLanguage = 'ja';
 
 // API設定
-// const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
-const API_URL_BASE = 'http://localhost:10000/';
+const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
+// const API_URL_BASE = 'http://localhost:10000/';
 const API_URL = API_URL_BASE + 'nori_tsukkomi';
 
 // overlayの固定width（一度設定したら変更しない）
@@ -328,6 +328,21 @@ questionForm.addEventListener('submit', async (e) => {
         // API結果の状態を管理
         let apiResult = null;
         let hasReached27Seconds = false;
+
+        const JaFontSize = '32px';
+        const EnFontSize = '28px';
+        const JaFontSizeBig = '60px';
+        const EnFontSizeBig = '60px';
+        
+        const changeTextAndFontSizeImmediately = (text, fontSize) => {
+            answerText.textContent = text;
+            const originalTransition = answerText.style.transition;
+            answerText.style.transition = 'none';
+            answerText.style.fontSize = fontSize;
+            requestAnimationFrame(() => {
+                answerText.style.transition = originalTransition;
+            });
+        };
         
         // 動画の再生時間に応じてテキストを更新する関数
         const updateAnswerTextByTime = (currentTime, answerData, question) => {
@@ -335,35 +350,22 @@ questionForm.addEventListener('submit', async (e) => {
                 // 日本語版
                 if (currentTime < TIME_SOUSOUSOUSOU_END) {
                     if (currentTime < TIME_HAI_END) {
-                        answerText.textContent = limitTextLength(`はい、${question}`);
-                        answerText.style.fontSize = '32px';
+                        changeTextAndFontSizeImmediately(limitTextLength(`はい、${question}`), JaFontSize);
                     } else {
-                        answerText.textContent = 'そうそうそうそう';
-                        answerText.style.fontSize = '32px';
+                        changeTextAndFontSizeImmediately('そうそうそうそう', JaFontSize);
                     }
                 } else if (!answerData) {
-                    answerText.textContent = 'そうそうそうそう';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('そうそうそうそう', JaFontSize);
                 } else if (answerData && currentTime < TIME_KI_END) {
-                    answerText.textContent = limitTextLength(answerData.ki);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.ki), JaFontSize);
                 } else if (answerData && currentTime < TIME_SHOU_END) {
-                    answerText.textContent = limitTextLength(answerData.shou);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.shou), JaFontSize);
                 } else if (answerData && currentTime < TIME_KETSU_END) {
-                    answerText.textContent = limitTextLength(answerData.ketsu);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.ketsu), JaFontSize);
                 } else if (answerData && currentTime < TIME_TTE_END) {
-                    answerText.textContent = 'って…';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('って…', JaFontSize);
                 } else if (answerData) {
-                    answerText.textContent = 'そ!';
-                    const originalTransition = answerText.style.transition;
-                    answerText.style.transition = 'none';
-                    answerText.style.fontSize = '60px';
-                    requestAnimationFrame(() => {
-                        answerText.style.transition = originalTransition;
-                    });
+                    changeTextAndFontSizeImmediately('そ!', JaFontSizeBig);
                     
                     // 「そ!」表示後、ボタンを段階的に表示
                     setTimeout(() => {
@@ -374,42 +376,28 @@ questionForm.addEventListener('submit', async (e) => {
                         }, 100);
                     }, 1500); // 「そ!」表示から0.2秒後にボタンを表示開始
                 } else {
-                    answerText.textContent = 'そうそうそうそう';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('そうそうそうそう', JaFontSize);
                 }
             } else {
                 // 英語版
                 if (currentTime < TIME_SOUSOUSOUSOU_END) {
                     if (currentTime < TIME_HAI_END) {
-                        answerText.textContent = limitTextLength(`Here, ${question}.`);
-                        answerText.style.fontSize = '32px';
+                        changeTextAndFontSizeImmediately(limitTextLength(`Here, ${question}.`), EnFontSize);
                     } else {
-                        answerText.textContent = 'Yeah, yeah, yeah.';
-                        answerText.style.fontSize = '32px';
+                        changeTextAndFontSizeImmediately('Yeah, yeah, yeah.', EnFontSize);
                     }
                 } else if (!answerData) {
-                    answerText.textContent = 'Yeah, yeah, yeah.';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('Yeah, yeah, yeah.', EnFontSize);
                 } else if (answerData && currentTime < TIME_KI_END) {
-                    answerText.textContent = limitTextLength(answerData.ki_en);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.ki_en), EnFontSize);
                 } else if (answerData && currentTime < TIME_SHOU_END) {
-                    answerText.textContent = limitTextLength(answerData.shou_en);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.shou_en), EnFontSize);
                 } else if (answerData && currentTime < TIME_KETSU_END) {
-                    answerText.textContent = limitTextLength(answerData.ketsu_en);
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately(limitTextLength(answerData.ketsu_en), EnFontSize);
                 } else if (answerData && currentTime < TIME_TTE_END) {
-                    answerText.textContent = 'Wait...';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('Wait...', EnFontSize);
                 } else if (answerData) {
-                    answerText.textContent = 'Yeah!';
-                    const originalTransition = answerText.style.transition;
-                    answerText.style.transition = 'none';
-                    answerText.style.fontSize = '60px';
-                    requestAnimationFrame(() => {
-                        answerText.style.transition = originalTransition;
-                    });
+                    changeTextAndFontSizeImmediately('Yeah!', JaFontSizeBig);
                     
                     // 「Yeah!」表示後、ボタンを段階的に表示
                     setTimeout(() => {
@@ -420,8 +408,7 @@ questionForm.addEventListener('submit', async (e) => {
                         }, 100);
                     }, 1500); // 「Yeah!」表示から0.2秒後にボタンを表示開始
                 } else {
-                    answerText.textContent = 'Yeah, yeah, yeah.';
-                    answerText.style.fontSize = '32px';
+                    changeTextAndFontSizeImmediately('Yeah, yeah, yeah.', EnFontSize);
                 }
             }
         };
