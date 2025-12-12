@@ -16,6 +16,12 @@ const TIME_SHOU_END = 7.1; // shouの表示終了時間
 const TIME_KETSU_END = 8.6; // ketsuの表示終了時間
 const TIME_TTE_END = 9.3; // 「って…」の表示終了時間
 
+// テキスト表示のフォントサイズ
+const JaFontSize = '32px';
+const EnFontSize = '28px';
+const JaFontSizeBig = '60px';
+const EnFontSizeBig = '60px';
+
 // DOM要素の取得
 const questionForm = document.getElementById('question-form');
 const questionInput = document.getElementById('question-input');
@@ -288,14 +294,23 @@ questionForm.addEventListener('submit', async (e) => {
             }
             return text;
         };
+
+        const changeTextAndFontSizeImmediately = (text, fontSize) => {
+            answerText.textContent = text;
+            const originalTransition = answerText.style.transition;
+            answerText.style.transition = 'none';
+            answerText.style.fontSize = fontSize;
+            requestAnimationFrame(() => {
+                answerText.style.transition = originalTransition;
+            });
+        };
         
         // 回答エリアに初期テキストを表示
         if (currentLanguage === 'ja') {
-            answerText.textContent = limitTextLength(`はい、${question}`);
+            changeTextAndFontSizeImmediately(limitTextLength(`はい、${question}`), JaFontSize);
         } else {
-            answerText.textContent = limitTextLength(`Here, ${question}.`);
+            changeTextAndFontSizeImmediately(limitTextLength(`Here, ${question}.`), EnFontSize);
         }
-        answerText.style.fontSize = '32px';
         
         // オーバーレイの位置を即座に設定（一瞬の位置ずれを防ぐ）
         if (overlay && savedBottom && savedBottom !== 'auto') {
@@ -342,21 +357,6 @@ questionForm.addEventListener('submit', async (e) => {
         let retryPlayHandlers = []; // 再試行イベントハンドラーを保存
         // エラー状態をリセット
         globalErrorState = false;
-
-        const JaFontSize = '32px';
-        const EnFontSize = '28px';
-        const JaFontSizeBig = '60px';
-        const EnFontSizeBig = '60px';
-        
-        const changeTextAndFontSizeImmediately = (text, fontSize) => {
-            answerText.textContent = text;
-            const originalTransition = answerText.style.transition;
-            answerText.style.transition = 'none';
-            answerText.style.fontSize = fontSize;
-            requestAnimationFrame(() => {
-                answerText.style.transition = originalTransition;
-            });
-        };
         
         // 動画の再生時間に応じてテキストを更新する関数
         const updateAnswerTextByTime = (currentTime, answerData, question) => {
@@ -411,7 +411,7 @@ questionForm.addEventListener('submit', async (e) => {
                 } else if (answerData && currentTime < TIME_TTE_END) {
                     changeTextAndFontSizeImmediately('And then...', EnFontSize);
                 } else if (answerData) {
-                    changeTextAndFontSizeImmediately('Yeah!', JaFontSizeBig);
+                    changeTextAndFontSizeImmediately('Yeah!', EnFontSizeBig);
                     
                     // 「Yeah!」表示後、ボタンを段階的に表示
                     setTimeout(() => {
