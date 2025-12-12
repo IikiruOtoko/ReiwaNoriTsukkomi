@@ -409,7 +409,7 @@ questionForm.addEventListener('submit', async (e) => {
                 } else if (answerData && currentTime < TIME_KETSU_END) {
                     changeTextAndFontSizeImmediately(limitTextLength(answerData.ketsu_en), EnFontSize);
                 } else if (answerData && currentTime < TIME_TTE_END) {
-                    changeTextAndFontSizeImmediately('Wait...', EnFontSize);
+                    changeTextAndFontSizeImmediately('And then...', EnFontSize);
                 } else if (answerData) {
                     changeTextAndFontSizeImmediately('Yeah!', JaFontSizeBig);
                     
