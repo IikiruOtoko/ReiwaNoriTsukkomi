@@ -168,7 +168,7 @@ body {
 }
 
 .terms-notice {
-    font-size: 10px;
+    font-size: 9.8px;
     color: #666;
     line-height: 1.5;
     margin-top: 10px;
@@ -236,9 +236,9 @@ body {
     background: rgb(229, 8, 196);
     color: white;
     border: none;
-    padding: 4px 16px;
-    border-radius: 18px;
-    font-size: 12px;
+    padding: 7px 18px;
+    border-radius: 20px;
+    font-size: 14px;
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.5s ease, visibility 0.5s ease;
@@ -247,8 +247,8 @@ body {
     align-self: flex-end;
     width: fit-content;
     position: absolute;
-    bottom: 0;
-    right: 0;
+    bottom: -6px;
+    right: -6px;
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -324,14 +324,14 @@ body {
     }
     
     .terms-notice {
-        font-size: 10px;
+        font-size: 9.8px;
     }
     
     .new-question-btn {
-        padding: 4px 16px;
-        font-size: 12px;
-        bottom: 0;
-        right: 0;
+        padding: 7px 18px;
+        font-size: 14px;
+        bottom: -6px;
+        right: -6px;
     }
     
     .answer-text {

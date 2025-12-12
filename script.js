@@ -337,7 +337,7 @@ questionForm.addEventListener('submit', async (e) => {
                     setTimeout(() => {
                         newQuestionBtn.classList.add('visible');
                     }, 100);
-                }, 500); // 「そ!」表示から0.5秒後にボタンを表示開始
+                }, 1500); // 「そ!」表示から0.2秒後にボタンを表示開始
             } else {
                 answerText.textContent = 'そうそうそうそう';
                 answerText.style.fontSize = '32px';
