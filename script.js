@@ -34,7 +34,11 @@ const languageToggle = document.getElementById('language-toggle');
 const termsNotice = document.querySelector('.terms-notice');
 
 // 言語状態（'ja' または 'en'）
-let currentLanguage = 'ja';
+// localStorageから読み込む（存在しない場合は'ja'をデフォルトとする）
+let currentLanguage = localStorage.getItem('currentLanguage') || 'ja';
+
+// エラー状態を追跡（グローバル）
+let globalErrorState = false;
 
 // API設定
 const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
@@ -322,12 +326,22 @@ questionForm.addEventListener('submit', async (e) => {
             return { success: true, answerData: answerData };
         }).catch(error => {
             console.error('エラーが発生しました:', error);
-            return { success: false, error: '申し訳ございません。エラーが発生しました。もう一度お試しください。' };
+            // エラーコードとメッセージを返す
+            const errorCode = error.status || error.code || 'UNKNOWN';
+            const errorMessage = error.message || '申し訳ございません。エラーが発生しました。';
+            return { 
+                success: false, 
+                error: errorMessage,
+                errorCode: errorCode
+            };
         });
         
         // API結果の状態を管理
         let apiResult = null;
         let hasReached27Seconds = false;
+        let retryPlayHandlers = []; // 再試行イベントハンドラーを保存
+        // エラー状態をリセット
+        globalErrorState = false;
 
         const JaFontSize = '32px';
         const EnFontSize = '28px';
@@ -417,14 +431,34 @@ questionForm.addEventListener('submit', async (e) => {
         apiPromise.then(result => {
             apiResult = result;
             
-            // APIチェック時間を過ぎていれば、すぐに動画を再開
+            // APIエラーが発生した場合
+            if (!result.success) {
+                // エラー状態を設定（グローバル）
+                globalErrorState = true;
+                // 動画を停止
+                answerVideo.pause();
+                // 再試行イベントリスナーを削除
+                retryPlayHandlers.forEach(handler => {
+                    document.removeEventListener('touchstart', handler);
+                    document.removeEventListener('click', handler);
+                });
+                retryPlayHandlers = [];
+                // エラーメッセージを表示
+                displayError(result.error);
+                // 「新しい質問」ボタンを表示
+                newQuestionBtn.style.display = 'block';
+                setTimeout(() => {
+                    newQuestionBtn.classList.add('visible');
+                }, 100);
+                // timeupdateイベントリスナーを削除
+                answerVideo.removeEventListener('timeupdate', checkTimeUpdate);
+                return;
+            }
+            
+            // APIチェック時間を過ぎていれば、すぐに動画を再開（成功時のみ）
             if (hasReached27Seconds) {
-                if (result.success) {
-                    // 現在の時刻に応じてテキストを更新
-                    updateAnswerTextByTime(answerVideo.currentTime, result.answerData, question);
-                } else {
-                    displayError(result.error);
-                }
+                // 現在の時刻に応じてテキストを更新
+                updateAnswerTextByTime(answerVideo.currentTime, result.answerData, question);
                 // 動画が停止している場合は再開して最後まで再生
                 if (answerVideo.paused) {
                     answerVideo.play().catch(error => {
@@ -436,21 +470,45 @@ questionForm.addEventListener('submit', async (e) => {
         
         // 動画を最初から再生開始
         answerVideo.currentTime = 0;
+        
         // スマホでの再生を確実にするため、Promiseで処理
         answerVideo.play().catch(error => {
             console.error('動画の再生に失敗しました:', error);
             // 再生が拒否された場合、ユーザーインタラクション後に再試行
             const retryPlay = () => {
+                // エラー状態の場合は再生しない
+                if (globalErrorState) return;
                 answerVideo.play().catch(err => console.error('再試行も失敗:', err));
             };
-            // タッチイベントで再試行
+            // タッチイベントで再試行（ハンドラーを保存）
             document.addEventListener('touchstart', retryPlay, { once: true });
             document.addEventListener('click', retryPlay, { once: true });
+            retryPlayHandlers.push(retryPlay);
         });
         
         // 動画の再生時間を監視してテキストを更新
         const checkTimeUpdate = () => {
             const currentTime = answerVideo.currentTime;
+            
+            // APIエラーが既に返ってきている場合、動画を停止して処理を終了
+            if (apiResult && !apiResult.success) {
+                // エラー状態を設定（グローバル）
+                globalErrorState = true;
+                answerVideo.pause();
+                // 再試行イベントリスナーを削除
+                retryPlayHandlers.forEach(handler => {
+                    document.removeEventListener('touchstart', handler);
+                    document.removeEventListener('click', handler);
+                });
+                retryPlayHandlers = [];
+                displayError(apiResult.error);
+                newQuestionBtn.style.display = 'block';
+                setTimeout(() => {
+                    newQuestionBtn.classList.add('visible');
+                }, 100);
+                answerVideo.removeEventListener('timeupdate', checkTimeUpdate);
+                return;
+            }
             
             // 「そうそうそうそう」の終了時点でAPI結果をチェック
             if (currentTime >= TIME_SOUSOUSOUSOU_END && !hasReached27Seconds) {
@@ -460,10 +518,25 @@ questionForm.addEventListener('submit', async (e) => {
                     // API結果が既に返ってきている場合
                     if (apiResult.success) {
                         updateAnswerTextByTime(currentTime, apiResult.answerData, question);
+                        // 動画は続行（最後まで再生）
                     } else {
+                        // エラーの場合、動画を停止
+                        globalErrorState = true;
+                        answerVideo.pause();
+                        // 再試行イベントリスナーを削除
+                        retryPlayHandlers.forEach(handler => {
+                            document.removeEventListener('touchstart', handler);
+                            document.removeEventListener('click', handler);
+                        });
+                        retryPlayHandlers = [];
                         displayError(apiResult.error);
+                        newQuestionBtn.style.display = 'block';
+                        setTimeout(() => {
+                            newQuestionBtn.classList.add('visible');
+                        }, 100);
+                        answerVideo.removeEventListener('timeupdate', checkTimeUpdate);
+                        return;
                     }
-                    // 動画は続行（最後まで再生）
                 } else {
                     // API結果がまだ返ってきていない場合、動画を停止して待機
                     answerVideo.pause();
@@ -506,7 +579,7 @@ questionForm.addEventListener('submit', async (e) => {
         
     } catch (error) {
         console.error('エラーが発生しました:', error);
-        displayError('申し訳ございません。エラーが発生しました。もう一度お試しください。');
+        displayError('申し訳ございません。エラーが発生しました。');
     } finally {
         // 送信ボタンを再有効化
         submitBtn.disabled = false;
@@ -519,21 +592,42 @@ async function sendToAPI(question) {
         message: question
     };
     
-    const response = await fetch(API_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestBody)
-    });
+    let response;
+    try {
+        response = await fetch(API_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(requestBody)
+        });
+    } catch (error) {
+        // ネットワークエラーなどの場合
+        const networkError = new Error(`ネットワークエラー: ${error.message}`);
+        networkError.status = 'NETWORK_ERROR';
+        networkError.code = 'NETWORK_ERROR';
+        throw networkError;
+    }
     
     if (!response.ok) {
         const errorText = await response.text();
         // console.log(errorText);
-        throw new Error(`API request failed: ${response.status} - ${response.statusText}`);
+        const httpError = new Error(`API request failed: ${response.status} - ${response.statusText}`);
+        httpError.status = response.status;
+        httpError.code = `HTTP_${response.status}`;
+        throw httpError;
     }
     
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (error) {
+        // JSONパースエラーの場合
+        const parseError = new Error('Invalid response format from API');
+        parseError.status = 'PARSE_ERROR';
+        parseError.code = 'PARSE_ERROR';
+        throw parseError;
+    }
     
     // JSON形式のレスポンスをパース
     if (data.ki && data.shou && data.ketsu) {
@@ -547,7 +641,10 @@ async function sendToAPI(question) {
             ketsu_en: data.ketsu_en || ''
         };
     } else {
-        throw new Error('Invalid response format from API');
+        const formatError = new Error('Invalid response format from API');
+        formatError.status = 'INVALID_FORMAT';
+        formatError.code = 'INVALID_FORMAT';
+        throw formatError;
     }
 }
 
@@ -577,6 +674,9 @@ function displayError(errorMessage) {
 
 // 新しい質問ボタンの処理
 newQuestionBtn.addEventListener('click', () => {
+    // エラー状態をリセット
+    globalErrorState = false;
+    
     // ボタンを完全に非表示にする
     newQuestionBtn.style.display = 'none';
     newQuestionBtn.classList.remove('visible');
@@ -682,6 +782,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // answer-videoは事前にメタデータを読み込む（preload="metadata"）
         // メタデータの読み込みを明示的に開始
         answerVideo.load();
+        
+        // エラー状態の時は動画のクリック/タッチで再生されないようにする（一度だけ追加）
+        const preventPlayOnError = (e) => {
+            if (globalErrorState) {
+                e.preventDefault();
+                e.stopPropagation();
+                answerVideo.pause();
+            }
+        };
+        answerVideo.addEventListener('click', preventPlayOnError);
+        answerVideo.addEventListener('touchstart', preventPlayOnError);
     }
     
     if (loadingVideo) {
@@ -720,6 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (langJaBtn && langEnBtn) {
         langJaBtn.addEventListener('click', () => {
             currentLanguage = 'ja';
+            localStorage.setItem('currentLanguage', 'ja');
             langJaBtn.classList.add('active');
             langEnBtn.classList.remove('active');
             updateUITexts();
@@ -727,10 +839,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         langEnBtn.addEventListener('click', () => {
             currentLanguage = 'en';
+            localStorage.setItem('currentLanguage', 'en');
             langEnBtn.classList.add('active');
             langJaBtn.classList.remove('active');
             updateUITexts();
         });
+        
+        // 初期表示時に保存された言語に応じてボタンのactive状態を設定
+        if (currentLanguage === 'ja') {
+            langJaBtn.classList.add('active');
+            langEnBtn.classList.remove('active');
+        } else {
+            langEnBtn.classList.add('active');
+            langJaBtn.classList.remove('active');
+        }
     }
     
     // 初期表示時にUIテキストを設定
