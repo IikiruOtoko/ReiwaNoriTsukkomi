@@ -1,4 +1,4 @@
-# 令和のノリツッコミ
+# 令和のノリツッコミAI
 
-[令和のノリツッコミ](https://iikiruotoko.github.io/ReiwaNoriTsukkomi/)のためのコードです。
+[令和のノリツッコミAI](https://iikiruotoko.github.io/ReiwaNoriTsukkomi/)のためのコードです。
 
