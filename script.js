@@ -201,9 +201,9 @@ function updateVideoSize() {
                 
                 // ボタンの高さを取得
                 const submitBtn = overlay.querySelector('.submit-btn');
-                let buttonHeight = 36; // デフォルト36px
+                let buttonHeight = 34; // デフォルト
                 if (submitBtn) {
-                    buttonHeight = submitBtn.offsetHeight || submitBtn.clientHeight || 36;
+                    buttonHeight = submitBtn.offsetHeight || submitBtn.clientHeight || 34;
                 }
                 
                 // テキストボックスの高さ = overlayの高さの50%
