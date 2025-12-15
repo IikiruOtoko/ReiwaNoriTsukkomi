@@ -263,6 +263,13 @@ questionForm.addEventListener('submit', async (e) => {
     // 送信ボタンを無効化
     const submitBtn = questionForm.querySelector('.submit-btn');
     submitBtn.disabled = true;
+
+    if (typeof gtag === 'function') {
+        gtag('event', 'submit_question', {
+            event_category: 'engagement',
+            event_label: 'question_form'
+        });
+    }
     
     try {
         // オーバーレイの位置情報を保存（切り替え前に）
@@ -354,6 +361,7 @@ questionForm.addEventListener('submit', async (e) => {
         // API結果の状態を管理
         let apiResult = null;
         let hasReached27Seconds = false;
+        let hasTrackedAnswerDisplay = false; // 回答表示完了のイベント送信を追跡
         let retryPlayHandlers = []; // 再試行イベントハンドラーを保存
         // エラー状態をリセット
         globalErrorState = false;
@@ -380,6 +388,17 @@ questionForm.addEventListener('submit', async (e) => {
                     changeTextAndFontSizeImmediately('って…', JaFontSize);
                 } else if (answerData) {
                     changeTextAndFontSizeImmediately('そ!', JaFontSizeBig);
+                    
+                    // 回答表示完了のイベントを送信（一度だけ）
+                    if (!hasTrackedAnswerDisplay) {
+                        hasTrackedAnswerDisplay = true;
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'answer_displayed', {
+                                event_category: 'engagement',
+                                event_label: 'answer_complete'
+                            });
+                        }
+                    }
                     
                     // 「そ!」表示後、ボタンを段階的に表示
                     setTimeout(() => {
@@ -412,6 +431,17 @@ questionForm.addEventListener('submit', async (e) => {
                     changeTextAndFontSizeImmediately('And then...', EnFontSize);
                 } else if (answerData) {
                     changeTextAndFontSizeImmediately('Yeah!', EnFontSizeBig);
+                    
+                    // 回答表示完了のイベントを送信（一度だけ）
+                    if (!hasTrackedAnswerDisplay) {
+                        hasTrackedAnswerDisplay = true;
+                        if (typeof gtag === 'function') {
+                            gtag('event', 'answer_displayed', {
+                                event_category: 'engagement',
+                                event_label: 'answer_complete'
+                            });
+                        }
+                    }
                     
                     // 「Yeah!」表示後、ボタンを段階的に表示
                     setTimeout(() => {
