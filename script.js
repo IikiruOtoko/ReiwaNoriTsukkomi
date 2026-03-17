@@ -22,6 +22,10 @@ const EnFontSize = '28px';
 const JaFontSizeBig = '60px';
 const EnFontSizeBig = '60px';
 
+// タブレット/モバイル表示のブレークポイント（px）
+// iPad Pro 12.9" 横(1366px)、iPad Air/Pro 横(1180-1194px)、iPad Mini 横(1133px) を含む
+const TABLET_MAX_WIDTH = 1366;
+
 // DOM要素の取得
 const questionForm = document.getElementById('question-form');
 const questionInput = document.getElementById('question-input');
@@ -60,7 +64,7 @@ function calculateVideoSize() {
     const containerWidth = window.innerWidth * 0.9; // 90% of viewport width
     
     // スマホ（縦）の場合は横幅いっぱいにする
-    const isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const isMobilePortrait = window.innerWidth < TABLET_MAX_WIDTH && window.innerHeight > window.innerWidth;
     
     if (isMobilePortrait) {
         // スマホ（縦）の場合は横幅いっぱい、高さは画面に収まる範囲で最大に
@@ -89,7 +93,7 @@ function calculateVideoSize() {
 
 // 動画・画像サイズを更新する関数
 function updateVideoSize() {
-    const isMobilePortrait = window.innerWidth < 768 && window.innerHeight > window.innerWidth;
+    const isMobilePortrait = window.innerWidth < TABLET_MAX_WIDTH && window.innerHeight > window.innerWidth;
     const mediaElements = document.querySelectorAll('.main-video');
     
     // 動画サイズを計算（デスクトップの場合）

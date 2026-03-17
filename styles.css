@@ -301,8 +301,8 @@ body {
     transform: translateY(-2px);
 }
 
-/* レスポンシブデザイン */
-@media (max-width: 768px) {
+/* レスポンシブデザイン（iPad Pro/Air/Mini 縦横対応、TABLET_MAX_WIDTH: 1366px） */
+@media (max-width: 1366px) {
     body {
         padding: 0;
         background: black;
