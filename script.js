@@ -51,9 +51,10 @@ let currentLanguage = localStorage.getItem('currentLanguage') || 'ja';
 let globalErrorState = false;
 
 // API設定
-const API_URL_BASE = 'https://iikiruotokoapi-1.onrender.com/';
-// const API_URL_BASE = 'http://localhost:10000/';
-const API_URL = API_URL_BASE + 'nori_tsukkomi';
+const API_URL_BASE = 'https://iikiri-api.sato-a-20010310.workers.dev';
+// const API_URL_BASE = 'http://localhost:10000';
+const API_URL = `${API_URL_BASE}/nori_tsukkomi`;
+const APP_API_KEY = '5eeff2e5dddf4cce008490f68997e3c2c3d3a7c56f2661ff87b540ad4b8d066b';
 
 // overlayの固定width（一度設定したら変更しない）
 let fixedOverlayWidth = null;
@@ -631,7 +632,8 @@ async function sendToAPI(question) {
         response = await fetch(API_URL, {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${APP_API_KEY}`
             },
             body: JSON.stringify(requestBody)
         });
@@ -737,17 +739,6 @@ newQuestionBtn.addEventListener('click', () => {
     questionInput.focus();
 });
 
-// コールドスタート対策: APIを叩いてサーバーを起動状態に保つ
-async function warmupAPI() {
-    try {
-        const response = await fetch(API_URL_BASE, {
-            method: 'GET'
-        });
-    } catch (error) {
-        // console.log(error);
-    }
-}
-
 // 動画の読み込みエラーハンドリング
 function setupVideoErrorHandling(video, videoName) {
     video.addEventListener('error', (e) => {
@@ -782,8 +773,6 @@ function setupVideoErrorHandling(video, videoName) {
 
 // ページ読み込み時の初期化
 document.addEventListener('DOMContentLoaded', async () => {
-    warmupAPI();
-    
     // 画像の読み込みエラーハンドリング
     if (displayImage) {
         displayImage.addEventListener('error', (e) => {
